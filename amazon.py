@@ -6,21 +6,13 @@ file_path = sys.argv[1]
 
 df = pd.read_csv(
     file_path,
-    skiprows=[0, 1],
 )
-df = df[df.columns[1:]]
-df = df.drop(0).reset_index()
 
-print(df.columns)
+import ipdb; ipdb.set_trace()
+df = df[["Order ID", "Order Date", "Item Total"]]
+df.columns = ["id", "datetime", "amount"]
+df["note"] = None
 
-for i in range(len(df)):
-    if pd.isna(df.ID[i]):
-        break
-
-df = df.iloc[0:i]
-
-df = df[["ID", "Datetime", "Amount (total)", "Note"]]
-df.columns = ["id", "datetime", "amount", "note"]
 
 chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
