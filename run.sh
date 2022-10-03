@@ -44,5 +44,5 @@ then
 
     echo "Processing raw files..."
     cd $code_folder
-    python3 clean_CSVs.py $data_folder
+    python3 pipeline.py $data_folder
 fi
