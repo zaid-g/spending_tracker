@@ -1,3 +1,5 @@
+from pprint import pprint as p
+import hashlib
 import datetime
 import dateutil.parser
 import re
@@ -100,6 +102,9 @@ def venmo(file_path, file_name):
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
+    df["id"] = df.apply(
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
+    )
     df.to_csv(cleaned_csv_path + "venmo_" + file_name, index=False)
     print("Cleaned one venmo file...")
 
@@ -115,6 +120,9 @@ def amex(file_path, file_name):
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
+    )
+    df["id"] = df.apply(
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
     )
     df.to_csv(cleaned_csv_path + "amex" + file_name, index=False)
     print("Cleaned one amex file...")
@@ -135,6 +143,9 @@ def citi(file_path, file_name):
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
+    df["id"] = df.apply(
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
+    )
     df.to_csv(cleaned_csv_path + "citi" + file_name, index=False)
     print("Cleaned one citi file...")
 
@@ -150,6 +161,9 @@ def amazon(file_path, file_name):
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
     df["amount"] = df["amount"].apply(lambda x: rm_chars(x))
+    df["id"] = df.apply(
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
+    )
     df.to_csv(cleaned_csv_path + "amazon" + file_name, index=False)
     print("Cleaned one amazon file...")
 
@@ -270,6 +284,42 @@ for filename in cleaned_csv_file_names:
 
 df = pd.concat(li, axis=0, ignore_index=True)
 
-import ipdb; ipdb.set_trace()
+categories = {
+    "car_repair": 1,
+    "home_supplies": 2,
+    "groceries": 3,
+    "gas": 4,
+    "dining": 5,
+    "travel": 6,
+    "medical": 7,
+    "education": 8,
+    "rent": 9,
+    "lawyer": 10,
+    None: 9,
+}
+subcategories = {
+    "car_repair": {},
+    "home_supplies": {},
+    "groceries": {},
+    "gas": {},
+    "dining": {},
+    "travel": {"airplane": 1, "taxi": 2, "car_rent": 3, "stay": 4},
+    "medical": {},
+    "education": {},
+    "rent": {},
+    "lawyer": 10,
+    None: {},
+}
 category_mappings_regex = {"^BALBOA INTERNATIONALSAN DIEGO$": "groceries"}
 subcategory_mappings_regex = {}
+
+df["category"] = None
+df["subcategory"] = None
+
+import ipdb
+
+ipdb.set_trace()
+for i in range(len(df)):
+    row = df.iloc[i]
+    if row.category == None:
+        print(row)
