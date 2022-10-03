@@ -1,4 +1,7 @@
+import datetime
+import dateutil.parser
 import re
+import glob
 import sys
 import numpy as np
 import pandas as pd
@@ -20,14 +23,14 @@ def contains_date_range(file_name):
 data_fol_path = sys.argv[1]
 raw_csv_path = data_fol_path + "/csv/raw/"
 cleaned_csv_path = data_fol_path + "/csv/cleaned/"
-csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
-csv_file_names = [
-    file_name for file_name in csv_file_names if file_name[0] != "."
-]  # remove hidden csv_file_names
+raw_csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
+raw_csv_file_names = [
+    file_name for file_name in raw_csv_file_names if file_name[0] != "."
+]  # remove hidden raw_csv_file_names
 
 
-# make sure all csv_file_names have date range
-for file_name in csv_file_names:
+# make sure all raw_csv_file_names have date range
+for file_name in raw_csv_file_names:
     if not contains_date_range(file_name):
         raise Exception(
             f"No date range detected in file {file}. Format is \n^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}"
@@ -36,16 +39,16 @@ for file_name in csv_file_names:
 
 # ---------- [rm whitespace, lowercase csv file names, reread names] ----------:
 
-for file_name in csv_file_names:
+for file_name in raw_csv_file_names:
     file_path = raw_csv_path + file_name
     formatted_file_name = "".join(file_name.split()).lower()
     formatted_file_path = raw_csv_path + formatted_file_name
     os.rename(file_path, formatted_file_path)
 
-csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
-csv_file_names = [
-    file_name for file_name in csv_file_names if file_name[0] != "."
-]  # remove hidden csv_file_names
+raw_csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
+raw_csv_file_names = [
+    file_name for file_name in raw_csv_file_names if file_name[0] != "."
+]  # remove hidden raw_csv_file_names
 
 
 # ---------- [clean files] ----------:
@@ -64,11 +67,13 @@ def is_not_formatted(file_name):
         return True
     return False
 
+
 def merge_debit_credit_columns(row):
     if np.isnan(row["Debit"]):
         return row["Credit"]
     else:
         return row["Debit"]
+
 
 def venmo(file_path, file_name):
     df = pd.read_csv(
@@ -82,7 +87,8 @@ def venmo(file_path, file_name):
             break
     df = df.iloc[0:i]
     df["Note"] = df.apply(
-        lambda row: row["Note"] + "__From: " + row["From"] + ". To: " + row["To"], axis=1
+        lambda row: row["Note"] + "__From: " + row["From"] + ". To: " + row["To"],
+        axis=1,
     )
     df = df[["Datetime", "Amount (total)", "Note"]]
     df.columns = ["datetime", "amount", "note"]
@@ -91,7 +97,10 @@ def venmo(file_path, file_name):
     df["source"] = "venmo"
     df["preselected_category"] = None
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
-    df.to_csv(cleaned_csv_path + "venmo_" + file_name)
+    df["datetime"] = df["datetime"].apply(
+        lambda datetime_string: dateutil.parser.parse(datetime_string)
+    )
+    df.to_csv(cleaned_csv_path + "venmo_" + file_name, index=False)
     print("Cleaned one venmo file...")
 
 
@@ -104,7 +113,10 @@ def amex(file_path, file_name):
     df["source"] = "amex"
     df["preselected_category"] = None
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
-    df.to_csv(cleaned_csv_path + "amex" + file_name)
+    df["datetime"] = df["datetime"].apply(
+        lambda datetime_string: dateutil.parser.parse(datetime_string)
+    )
+    df.to_csv(cleaned_csv_path + "amex" + file_name, index=False)
     print("Cleaned one amex file...")
 
 
@@ -115,12 +127,15 @@ def citi(file_path, file_name):
     if (sum(np.isnan(df.Credit.values)) + sum(np.isnan(df.Debit.values))) != len(df):
         raise Exception("Failed to parse debit/credit columns")
     df["amount"] = df.apply(lambda row: merge_debit_credit_columns(row), axis=1)
-    df = df[[ "Date", "amount", "Description"]]
-    df.columns = [ "datetime", "amount", "note"]
+    df = df[["Date", "amount", "Description"]]
+    df.columns = ["datetime", "amount", "note"]
     df["source"] = "citi"
     df["preselected_category"] = None
-    df = df[[ "datetime", "amount", "source", "preselected_category", "note"]]
-    df.to_csv(cleaned_csv_path + "citi" + file_name)
+    df = df[["datetime", "amount", "source", "preselected_category", "note"]]
+    df["datetime"] = df["datetime"].apply(
+        lambda datetime_string: dateutil.parser.parse(datetime_string)
+    )
+    df.to_csv(cleaned_csv_path + "citi" + file_name, index=False)
     print("Cleaned one citi file...")
 
 
@@ -130,10 +145,13 @@ def amazon(file_path, file_name):
     )
     df = df[["Order Date", "Item Total", "Category", "Title"]]
     df.columns = ["datetime", "amount", "preselected_category", "note"]
+    df["source"] = "amazon"
+    df["datetime"] = df["datetime"].apply(
+        lambda datetime_string: dateutil.parser.parse(datetime_string)
+    )
     df["amount"] = df["amount"].apply(lambda x: rm_chars(x))
-    df.to_csv(cleaned_csv_path + "amazon" + file_name)
+    df.to_csv(cleaned_csv_path + "amazon" + file_name, index=False)
     print("Cleaned one amazon file...")
-
 
 
 def chase(file_path, file_name):
@@ -237,6 +255,21 @@ def detect_file_source(file_path):
     raise Exception(f"Could not identify file {file_path}")
 
 
-for file_name in csv_file_names:
+for file_name in raw_csv_file_names:
     file_path = raw_csv_path + file_name
     detect_file_source(file_path)(file_path, file_name)
+
+# ---------- [merge into final csv] ----------:
+
+cleaned_csv_file_names = glob.glob(os.path.join(cleaned_csv_path, "*.csv"))
+
+li = []
+for filename in cleaned_csv_file_names:
+    df = pd.read_csv(filename, index_col=None, header=0, parse_dates=["datetime"])
+    li.append(df)
+
+df = pd.concat(li, axis=0, ignore_index=True)
+
+import ipdb; ipdb.set_trace()
+category_mappings_regex = {"^BALBOA INTERNATIONALSAN DIEGO$": "groceries"}
+subcategory_mappings_regex = {}
