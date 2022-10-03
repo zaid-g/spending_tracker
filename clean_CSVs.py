@@ -1,3 +1,4 @@
+import uuid
 import re
 import sys
 import numpy as np
@@ -6,38 +7,145 @@ import os
 from os import listdir
 from os.path import isfile, join
 
-data_fol_path = sys.argv[1]
-raw_csv_path = data_fol_path + "/csv/raw"
-cleaned_csv_path = data_fol_path + "/csv/cleaned/"
-csv_files = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
 
-csv_files = [file for file in csv_files if file[0] != "."]  # remove hidden csv_files
+# ---------- [read csv file names and make sure no problems] ----------:
 
 
-def contains_date_range(file):
-    match_ = re.search(r"^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}", file)
+def contains_date_range(file_name):
+    match_ = re.search(r"^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}", file_name)
     if match_ == None:
         return False
     return True
 
 
-# make sure all csv_files have date range
-for file in csv_files:
-    if not contains_date_range(file):
+data_fol_path = sys.argv[1]
+raw_csv_path = data_fol_path + "/csv/raw/"
+cleaned_csv_path = data_fol_path + "/csv/cleaned/"
+csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
+csv_file_names = [
+    file_name for file_name in csv_file_names if file_name[0] != "."
+]  # remove hidden csv_file_names
+
+
+# make sure all csv_file_names have date range
+for file_name in csv_file_names:
+    if not contains_date_range(file_name):
         raise Exception(
             f"No date range detected in file {file}. Format is \n^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}"
         )
 
 
-def is_not_formatted(file):
-    match_ = re.search(r"\d{4}-\d{2}_formatted____", file)
+# ---------- [rm whitespace, lowercase csv file names, reread names] ----------:
+
+for file_name in csv_file_names:
+    file_path = raw_csv_path + file_name
+    formatted_file_name = "".join(file_name.split()).lower()
+    formatted_file_path = raw_csv_path + formatted_file_name
+    os.rename(file_path, formatted_file_path)
+
+csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
+csv_file_names = [
+    file_name for file_name in csv_file_names if file_name[0] != "."
+]  # remove hidden csv_file_names
+
+
+# ---------- [clean files] ----------:
+
+
+def rm_chars(s):
+    chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    l = list(s)
+    l = [c for c in l if c in chars]
+    return float("".join(l))
+
+
+def is_not_formatted(file_name):
+    match_ = re.search(r"\d{4}-\d{2}_formatted____", file_name)
     if match_ == None:
         return True
     return False
 
+def merge_debit_credit_columns(row):
+    if np.isnan(row["Debit"]):
+        return row["Credit"]
+    else:
+        return row["Debit"]
 
-unformatted_files = [file for file in csv_files if is_not_formatted(file)]
-print(f"Unformatted files are {unformatted_files}")
+def venmo(file_path, file_name):
+    df = pd.read_csv(
+        file_path,
+        skiprows=[0, 1],
+    )
+    df = df[df.columns[1:]]
+    df = df.drop(0).reset_index()
+    for i in range(len(df)):
+        if pd.isna(df.ID[i]):
+            break
+    df = df.iloc[0:i]
+    df["Note"] = df.apply(
+        lambda row: row["Note"] + "__From: " + row["From"] + ". To: " + row["To"], axis=1
+    )
+    df = df[["ID", "Datetime", "Amount (total)", "Note"]]
+    df.columns = ["uid", "datetime", "amount", "note"]
+    chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    df["amount"] = df["amount"].apply(lambda x: rm_chars(x))
+    df["source"] = "venmo"
+    df["preselected_category"] = None
+    df = df[["uid", "datetime", "amount", "source", "preselected_category", "note"]]
+    assert len(df["uid"].value_counts()) == len(df)
+    df.to_csv(cleaned_csv_path + "venmo_" + file_name)
+    print("Cleaned one venmo file...")
+
+
+def amex(file_path, file_name):
+    df = pd.read_csv(
+        file_path,
+    )
+    df["uid"] = [uuid.uuid4() for i in range(len(df))]
+    df = df[["uid", "Date", "Amount", "Description"]]
+    df.columns = ["uid", "datetime", "amount", "note"]
+    df["source"] = "amex"
+    df["preselected_category"] = None
+    df = df[["uid", "datetime", "amount", "source", "preselected_category", "note"]]
+    assert len(df["uid"].value_counts()) == len(df)
+    df.to_csv(cleaned_csv_path + "amex" + file_name)
+    print("Cleaned one amex file...")
+
+
+def citi(file_path, file_name):
+    df = pd.read_csv(
+        file_path,
+    )
+    if (sum(np.isnan(df.Credit.values)) + sum(np.isnan(df.Debit.values))) != len(df):
+        raise Exception("Failed to parse debit/credit columns")
+    df["amount"] = df.apply(lambda row: merge_debit_credit_columns(row), axis=1)
+    df["uid"] = [uuid.uuid4() for i in range(len(df))]
+    df = df[["uid", "Date", "amount", "Description"]]
+    df.columns = ["uid", "datetime", "amount", "note"]
+    df["source"] = "citi"
+    df["preselected_category"] = None
+    df = df[["uid", "datetime", "amount", "source", "preselected_category", "note"]]
+    assert len(df["uid"].value_counts()) == len(df)
+    df.to_csv(cleaned_csv_path + "citi" + file_name)
+    print("Cleaned one citi file...")
+
+
+def amazon(file_path, file_name):
+    df = pd.read_csv(
+        file_path,
+    )
+    df["uid"] = [uuid.uuid4() for i in range(len(df))] # Order Id is not unique...
+    df = df[["uid", "Order Date", "Item Total", "Category", "Title"]]
+    df.columns = ["uid", "datetime", "amount", "preselected_category", "note"]
+    df["amount"] = df["amount"].apply(lambda x: rm_chars(x))
+    assert len(df["uid"].value_counts()) == len(df)
+    df.to_csv(cleaned_csv_path + "amazon" + file_name)
+    print("Cleaned one amazon file...")
+
+
+
+def chase(file_path, file_name):
+    pass
 
 
 def detect_file_source(file_path):
@@ -64,7 +172,7 @@ def detect_file_source(file_path):
             "Year to Date Venmo Fees",
             "Disclaimer",
         ]:
-            return "venmo"
+            return venmo
     except:
         pass
     try:
@@ -109,7 +217,7 @@ def detect_file_source(file_path):
             "Currency",
             "Group Name",
         ]:
-            return "amazon"
+            return amazon
     except:
         pass
     try:
@@ -117,7 +225,7 @@ def detect_file_source(file_path):
             file_path,
         )
         if list(df.columns) == ["Status", "Date", "Description", "Debit", "Credit"]:
-            return "citi"
+            return citi
     except:
         pass
     try:
@@ -131,16 +239,12 @@ def detect_file_source(file_path):
             "Account #",
             "Amount",
         ]:
-            return "amex"
+            return amex
     except:
         pass
     raise Exception(f"Could not identify file {file_path}")
 
 
-for file in csv_files:
-    file_path = raw_csv_path + "/" + file
-    os.rename(file_path, ''.join(file_path.split()))
-    file_path = ''.join(file_path.split())
-    source_name = detect_file_source(file_path)
-    cpy_command = f"cp {file_path} {cleaned_csv_path + source_name + file}"
-    os.system(cpy_command)
+for file_name in csv_file_names:
+    file_path = raw_csv_path + file_name
+    detect_file_source(file_path)(file_path, file_name)
