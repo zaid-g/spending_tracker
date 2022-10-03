@@ -8,10 +8,8 @@ df = pd.read_csv(
     file_path,
 )
 
-import ipdb; ipdb.set_trace()
-df = df[["Order ID", "Order Date", "Item Total"]]
-df.columns = ["id", "datetime", "amount"]
-df["note"] = None
+df = df[["Order ID", "Order Date", "Item Total", "Category", "Title"]]
+df.columns = ["uid", "datetime", "amount", "preselected_category", "note"]
 
 
 chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
@@ -24,4 +22,5 @@ def rm_chars(s):
 
 
 df["amount"] = df["amount"].apply(lambda x: rm_chars(x))
+assert len(df["uid"].value_counts) == len(df)
 print(df)
