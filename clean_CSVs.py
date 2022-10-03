@@ -1,4 +1,3 @@
-import uuid
 import re
 import sys
 import numpy as np
@@ -85,14 +84,13 @@ def venmo(file_path, file_name):
     df["Note"] = df.apply(
         lambda row: row["Note"] + "__From: " + row["From"] + ". To: " + row["To"], axis=1
     )
-    df = df[["ID", "Datetime", "Amount (total)", "Note"]]
-    df.columns = ["uid", "datetime", "amount", "note"]
+    df = df[["Datetime", "Amount (total)", "Note"]]
+    df.columns = ["datetime", "amount", "note"]
     chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
     df["amount"] = df["amount"].apply(lambda x: rm_chars(x))
     df["source"] = "venmo"
     df["preselected_category"] = None
-    df = df[["uid", "datetime", "amount", "source", "preselected_category", "note"]]
-    assert len(df["uid"].value_counts()) == len(df)
+    df = df[["datetime", "amount", "source", "preselected_category", "note"]]
     df.to_csv(cleaned_csv_path + "venmo_" + file_name)
     print("Cleaned one venmo file...")
 
@@ -101,13 +99,11 @@ def amex(file_path, file_name):
     df = pd.read_csv(
         file_path,
     )
-    df["uid"] = [uuid.uuid4() for i in range(len(df))]
-    df = df[["uid", "Date", "Amount", "Description"]]
-    df.columns = ["uid", "datetime", "amount", "note"]
+    df = df[["Date", "Amount", "Description"]]
+    df.columns = ["datetime", "amount", "note"]
     df["source"] = "amex"
     df["preselected_category"] = None
-    df = df[["uid", "datetime", "amount", "source", "preselected_category", "note"]]
-    assert len(df["uid"].value_counts()) == len(df)
+    df = df[["datetime", "amount", "source", "preselected_category", "note"]]
     df.to_csv(cleaned_csv_path + "amex" + file_name)
     print("Cleaned one amex file...")
 
@@ -119,13 +115,11 @@ def citi(file_path, file_name):
     if (sum(np.isnan(df.Credit.values)) + sum(np.isnan(df.Debit.values))) != len(df):
         raise Exception("Failed to parse debit/credit columns")
     df["amount"] = df.apply(lambda row: merge_debit_credit_columns(row), axis=1)
-    df["uid"] = [uuid.uuid4() for i in range(len(df))]
-    df = df[["uid", "Date", "amount", "Description"]]
-    df.columns = ["uid", "datetime", "amount", "note"]
+    df = df[[ "Date", "amount", "Description"]]
+    df.columns = [ "datetime", "amount", "note"]
     df["source"] = "citi"
     df["preselected_category"] = None
-    df = df[["uid", "datetime", "amount", "source", "preselected_category", "note"]]
-    assert len(df["uid"].value_counts()) == len(df)
+    df = df[[ "datetime", "amount", "source", "preselected_category", "note"]]
     df.to_csv(cleaned_csv_path + "citi" + file_name)
     print("Cleaned one citi file...")
 
@@ -134,11 +128,9 @@ def amazon(file_path, file_name):
     df = pd.read_csv(
         file_path,
     )
-    df["uid"] = [uuid.uuid4() for i in range(len(df))] # Order Id is not unique...
-    df = df[["uid", "Order Date", "Item Total", "Category", "Title"]]
-    df.columns = ["uid", "datetime", "amount", "preselected_category", "note"]
+    df = df[["Order Date", "Item Total", "Category", "Title"]]
+    df.columns = ["datetime", "amount", "preselected_category", "note"]
     df["amount"] = df["amount"].apply(lambda x: rm_chars(x))
-    assert len(df["uid"].value_counts()) == len(df)
     df.to_csv(cleaned_csv_path + "amazon" + file_name)
     print("Cleaned one amazon file...")
 

@@ -2,22 +2,32 @@
 
 set -e
 
+echo "Running..."
+echo
+
+
 code_folder=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-data_folder=$1
+data_folder=$(realpath $1)
 raw_csv_folder=$data_folder/csv/raw
 cleaned_csv_folder=$data_folder/csv/cleaned
 
 cd $raw_csv_folder
+echo "1. Is this the right folder containing raw CSV files?"
+echo
+echo $raw_csv_folder
+echo
 ls $raw_csv_folder
 echo
-read -p "Is this the right folder containing CSV files? And do you have correct activated python VENV? And are you sure the csv's contain complete data up to at most one month from today's date?" -n 1 -r
+echo "2. Do you have correct activated python virtual environment"
+read -p "3. Are you sure the csv's contain complete data up to at most one month from today's date?" -n 1 -r
+echo
 
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
 
     echo "Okay, running script..."
     # dedup all files in directory by shasum
-    echo "Deduplicating files..."
+    echo "Deduplicating files... if didn't print then no duplicates found"
     declare -A arr
     shopt -s globstar
 
@@ -35,7 +45,4 @@ then
     echo "Processing raw files..."
     cd $code_folder
     python3 clean_CSVs.py $data_folder
-    cd $code_folder
-    find $cleaned_csv_folder -type f -name "citi*" -exec python3 citi.py {} \;
-
 fi
