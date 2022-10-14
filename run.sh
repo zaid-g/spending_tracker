@@ -12,14 +12,20 @@ raw_csv_folder=$data_folder/csv/raw
 cleaned_csv_folder=$data_folder/csv/cleaned
 
 cd $raw_csv_folder
+echo "Are all these correct?"
+echo
 echo "1. Is this the right folder containing raw CSV files?"
 echo
 echo $raw_csv_folder
 echo
 ls $raw_csv_folder
 echo
-echo "2. Do you have correct activated python virtual environment"
-read -p "3. Are you sure the csv's contain complete data up to at most one month from today's date?" -n 1 -r
+echo "2. Do you have correct activated python virtual environment?"
+echo "3. Are you sure the csv's contain complete data up to at most one month from today's date?" 
+echo
+echo "[Y/n]  "
+echo
+read -p "" -n 1 -r
 echo
 
 if [[ $REPLY =~ ^[Yy]$ ]]

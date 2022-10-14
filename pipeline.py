@@ -1,3 +1,4 @@
+import json
 from pprint import pprint as p
 import hashlib
 import datetime
@@ -22,9 +23,9 @@ def contains_date_range(file_name):
     return True
 
 
-data_fol_path = sys.argv[1]
-raw_csv_path = data_fol_path + "/csv/raw/"
-cleaned_csv_path = data_fol_path + "/csv/cleaned/"
+data_fol_path = sys.argv[1] + '/'
+raw_csv_path = data_fol_path + "csv/raw/"
+cleaned_csv_path = data_fol_path + "csv/cleaned/"
 raw_csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
 raw_csv_file_names = [
     file_name for file_name in raw_csv_file_names if file_name[0] != "."
@@ -310,15 +311,17 @@ subcategories = {
     "lawyer": 10,
     None: {},
 }
-category_mappings_regex = {"^BALBOA INTERNATIONALSAN DIEGO$": "groceries"}
-subcategory_mappings_regex = {}
+category_map_regex = {"^BALBOA INTERNATIONALSAN DIEGO$": "groceries"}
+subcategory_map_regex = {}
 
 df["category"] = None
 df["subcategory"] = None
 
-import ipdb
+with open(data_fol_path + 'category_subcategory_map.json') as f:
+    category_subcategory_map = json.load(f)
 
-ipdb.set_trace()
+
+import ipdb; ipdb.set_trace()
 for i in range(len(df)):
     row = df.iloc[i]
     if row.category == None:
