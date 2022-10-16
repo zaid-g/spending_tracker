@@ -1,3 +1,5 @@
+from pprint import pprint as pp
+import ipdb
 import re
 import json
 from pprint import pprint as p
@@ -302,44 +304,33 @@ assert len(df) == len(
     df.id.value_counts()
 ), "Error: found duplicate ID(s) in cleaned files"
 
-# categories = {
-#    "car_repair": 1,
-#    "home_supplies": 2,
-#    "groceries": 3,
-#    "gas": 4,
-#    "dining": 5,
-#    "travel": 6,
-#    "medical": 7,
-#    "education": 8,
-#    "rent": 9,
-#    "lawyer": 10,
-#    None: 9,
-# }
-# subcategories = {
-#    "car_repair": {},
-#    "home_supplies": {},
-#    "groceries": {},
-#    "gas": {},
-#    "dining": {},
-#    "travel": {"airplane": 1, "taxi": 2, "car_rent": 3, "stay": 4},
-#    "medical": {},
-#    "education": {},
-#    "rent": {},
-#    "lawyer": 10,
-#    None: {},
-# }
-category_map_regex = {
-    "^BALBOA INTERNATIONALSAN DIEGO$": ("groceries"),
-    "^ATHENS OU INN-CUTLERS": ("travel", "hotel"),
-}
-
 print(df[["datetime", "amount", "source", "note"]])
 
-# first read entire df including written history and
-# store all possible categories and patterns in variable
+# first read entire df including written history
 hist_df = pd.read_csv(historical_categorized_csv_path, parse_dates=["datetime"])
+
+# assert all patterns in historical file indeed do match text of that transaction
+def assert_pattern_matches_text(pattern, text):
+    if pd.isna(pattern):
+        return
+    assert (
+        re.compile(pattern).search(text) != None
+    ), "Error: found pattern that doesn't match note (text)"
+
+
+hist_df.apply(
+    lambda row: assert_pattern_matches_text(row["pattern"], row["note"]), axis=1
+)
+
+# store all possible categories and patterns in variable
 category_map_regex = list(
-    set([(row["pattern"], row["category"]) for index, row in hist_df.iterrows()])
+    set(
+        [
+            (row["pattern"], row["category"])
+            for index, row in hist_df.iterrows()
+            if not pd.isna(row["pattern"])
+        ]
+    )
 )
 # make sure no pattern maps to more than one category
 all_patterns = set([pattern for pattern, _ in category_map_regex])
@@ -349,20 +340,18 @@ for pattern in all_patterns:
     for i in range(len(category_map_regex)):
         if category_map_regex[i][0] == pattern:
             mapped_categories.add(category_map_regex[i][1])
-    import ipdb; ipdb.set_trace()
     assert (
         len(mapped_categories) == 1
     ), "Error: Found the same pattern mapping to more than one category"
 category_map_regex = dict(category_map_regex)
 
-# assert all patterns in historical file indeed do match text of that transaction
-def assert_pattern_matches_text(pattern, text):
-    assert re.compile(pattern).search(text) != None, "Error: found pattern that doesn't match note (text)"
-hist_df.apply(lambda row: assert_pattern_matches_text(row["pattern"], row["note"]), axis=1)
-
 # assert all categories are valid in historical file
 def assert_category_dtype(category):
+    if pd.isna(category):
+        return
     assert type(category) == str, "category must be string"
+
+
 hist_df["category"].apply(lambda category: assert_category_dtype(category))
 
 # make sure no ids are duplicated
@@ -381,11 +370,13 @@ def get_matched_pattern(text):
         if re.compile(pattern).search(text) != None:
             return pattern
 
+
 def get_category_from_pattern(pattern):
     if pattern == None:
-        return ()
+        return None
     else:
         return category_map_regex[pattern]
+
 
 df["pattern"] = df["note"].apply(lambda text: get_matched_pattern(text))
 df["category"] = df["pattern"].apply(lambda pattern: get_category_from_pattern(pattern))
@@ -400,10 +391,69 @@ assert len(hist_df) == len(
     hist_df.id.value_counts()
 ), "Error: found duplicate IDs in concatenated history + recent file (really weird if you get this error)"
 
-# ask user to confirm or override
-print(df)
+# time to ask user to confirm or override
+# sort categories and patterns for visual display
+all_categories = sorted(list(all_categories))
+all_patterns = sorted(list(all_patterns))
+while True:
+    print(
+        df[
+            [
+                "note",
+                "datetime",
+                "amount",
+                "source",
+                "preselected_category",
+                "pattern",
+                "category",
+            ]
+        ]
+    )
 
-import ipdb; ipdb.set_trace()
-category = input(
-    'Please categorize this transaction e.g. ("entertainment", "snowboarding", "pass")'
-)
+    while True:
+        try:
+            transaction_index = int(
+                input(
+                    "Does this look good? If so, enter -1.\nOtherwise, select row you would like to categorize.\nEnter -2 for breakpoint\n"
+                )
+            )
+            if transaction_index >= 0:
+                df.loc[transaction_index]
+            break
+        except ValueError:
+            print("Not an integer value or out of range...")
+    if transaction_index == -1:
+        break
+    if transaction_index == -2:
+        ipdb.set_trace()
+    print("\n      ***** Transaction Details ******         \n")
+    print(df.loc[transaction_index])
+    print("\n      ***** All Categories ******         \n")
+    for i in range(len(all_categories)):
+        print(f"{i}: {all_categories[i]}")
+    inputted_category = input(
+        f"\nCategorize this transaction by typing in category or selecting index of pre-existing category:\n"
+    )
+    if inputted_category.isdigit():
+        df.loc[transaction_index, "category"] = all_categories[int(inputted_category)]
+    else:
+        df.loc[transaction_index, "category"] = inputted_category
+    while True:
+        print("\n      ***** All Patterns ******         \n")
+        for i in range(len(all_patterns)):
+            print(f"{i}: {all_patterns[i]}")
+        inputted_pattern = input("Add a pattern for this transaction (enter to skip)\n")
+        if inputted_pattern == "":
+            break
+        try:
+            if inputted_pattern.isdigit():
+                inputted_pattern = all_patterns[int(inputted_pattern)]
+            assert_pattern_matches_text(
+                inputted_pattern, df.loc[transaction_index, "note"]
+            )
+            df.loc[transaction_index, "pattern"] = inputted_pattern
+            break
+        except:
+            print("Error: inputted pattern does not match text (note)")
+
+df.to_csv(data_fol_path + "history.csv", index=False)
