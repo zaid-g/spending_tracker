@@ -383,6 +383,7 @@ df["category"] = df["pattern"].apply(lambda pattern: get_category_from_pattern(p
 df = df[~df.id.isin(hist_df.id.values)]
 df = pd.concat([df, hist_df], axis=0, ignore_index=True)
 df = df.sort_values("datetime", ascending=False, ignore_index=True)
+df = df.sort_index(ascending=False)
 # make sure no ids are duplicated
 assert len(hist_df) == len(
     hist_df.id.value_counts()
