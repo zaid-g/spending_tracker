@@ -1,3 +1,4 @@
+import re
 import json
 from pprint import pprint as p
 import hashlib
@@ -23,7 +24,8 @@ def contains_date_range(file_name):
     return True
 
 
-data_fol_path = sys.argv[1] + '/'
+data_fol_path = sys.argv[1] + "/"
+historical_categorized_csv_path = data_fol_path + "history.csv"
 raw_csv_path = data_fol_path + "csv/raw/"
 cleaned_csv_path = data_fol_path + "csv/cleaned/"
 raw_csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
@@ -285,44 +287,118 @@ for filename in cleaned_csv_file_names:
 
 df = pd.concat(li, axis=0, ignore_index=True)
 
-categories = {
-    "car_repair": 1,
-    "home_supplies": 2,
-    "groceries": 3,
-    "gas": 4,
-    "dining": 5,
-    "travel": 6,
-    "medical": 7,
-    "education": 8,
-    "rent": 9,
-    "lawyer": 10,
-    None: 9,
+df = df[
+    [
+        "id",
+        "datetime",
+        "amount",
+        "source",
+        "preselected_category",
+        "note",
+    ]
+]
+
+assert len(df) == len(
+    df.id.value_counts()
+), "Error: found duplicate ID(s) in cleaned files"
+
+# categories = {
+#    "car_repair": 1,
+#    "home_supplies": 2,
+#    "groceries": 3,
+#    "gas": 4,
+#    "dining": 5,
+#    "travel": 6,
+#    "medical": 7,
+#    "education": 8,
+#    "rent": 9,
+#    "lawyer": 10,
+#    None: 9,
+# }
+# subcategories = {
+#    "car_repair": {},
+#    "home_supplies": {},
+#    "groceries": {},
+#    "gas": {},
+#    "dining": {},
+#    "travel": {"airplane": 1, "taxi": 2, "car_rent": 3, "stay": 4},
+#    "medical": {},
+#    "education": {},
+#    "rent": {},
+#    "lawyer": 10,
+#    None: {},
+# }
+category_map_regex = {
+    "^BALBOA INTERNATIONALSAN DIEGO$": ("groceries"),
+    "^ATHENS OU INN-CUTLERS": ("travel", "hotel"),
 }
-subcategories = {
-    "car_repair": {},
-    "home_supplies": {},
-    "groceries": {},
-    "gas": {},
-    "dining": {},
-    "travel": {"airplane": 1, "taxi": 2, "car_rent": 3, "stay": 4},
-    "medical": {},
-    "education": {},
-    "rent": {},
-    "lawyer": 10,
-    None: {},
-}
-category_map_regex = {"^BALBOA INTERNATIONALSAN DIEGO$": "groceries"}
-subcategory_map_regex = {}
 
-df["category"] = None
-df["subcategory"] = None
+print(df[["datetime", "amount", "source", "note"]])
 
-with open(data_fol_path + 'category_subcategory_map.json') as f:
-    category_subcategory_map = json.load(f)
+# first read entire df including written history and
+# store all possible categories and patterns in variable
+hist_df = pd.read_csv(historical_categorized_csv_path)
+category_map_regex = list(
+    set([(row["pattern"], row["category"]) for index, row in hist_df.iterrows()])
+)
+# make sure no pattern maps to more than one category
+all_patterns = set([pattern for pattern, _ in category_map_regex])
+all_categories = set([category for _, category in category_map_regex])
+for pattern in all_patterns:
+    mapped_categories = set()
+    for i in range(len(category_map_regex)):
+        if category_map_regex[i][0] == pattern:
+            mapped_categories.add(category_map_regex[i][1])
+    assert (
+        len(mapped_categories) == 1
+    ), "Error: Found the same pattern mapping to more than one category"
+category_map_regex = dict(category_map_regex)
+
+# make sure no ids are duplicated
+assert len(hist_df) == len(
+    hist_df.id.value_counts()
+), "Error: found duplicate IDs in historical file"
+
+# make sure all historical transactions are accounted for in cleaned_csvs
+assert set(hist_df.id.values).issubset(
+    df.id.values
+), "Error: not all historical transactions accounted for in cleaned or raw csvs"
+
+# update df to include history
+df = df[~df.id.isin(hist_df.id.values)]
+df = pd.concat([df, hist_df], axis=0, ignore_index=True)
+# make sure no ids are duplicated
+assert len(hist_df) == len(
+    hist_df.id.value_counts()
+), "Error: found duplicate IDs in concatenated history + recent file (really weird if you get this error)"
+
+# apply the patterns, make sure no text matches more than one pattern
 
 
-import ipdb; ipdb.set_trace()
-for i in range(len(df)):
-    row = df.iloc[i]
-    if row.category == None:
-        print(row)
+
+def get_matched_pattern(text):
+    matched_pattern = None
+    num_matches = 0  # there should not be more than one regex match
+    for pattern in category_map_regex:
+        if re.compile(pattern).search(text) != None:
+            num_matches += 1
+            matched_pattern = pattern
+    assert num_matches <= 1, "Error: multiple patterns match text"
+    return matched_pattern
+
+
+df["pattern"] = df["note"].apply(lambda text: get_matched_pattern(text))
+import ipdb
+
+ipdb.set_trace()
+df["category"] = df["pattern"].apply(lambda pattern: category_map_regex[pattern])
+
+# ask user to confirm or override
+
+for i in len(df[df["category"] == None]):
+    category = input(
+        'Please categorize this transaction e.g. ("entertainment", "snowboarding", "pass")'
+    )
+    assert type(category) == tuple, "category must be tuple of strings"
+    for item in category:
+        assert type(item) == str, "category must be tuple of strings"
