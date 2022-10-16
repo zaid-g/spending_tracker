@@ -337,7 +337,7 @@ print(df[["datetime", "amount", "source", "note"]])
 
 # first read entire df including written history and
 # store all possible categories and patterns in variable
-hist_df = pd.read_csv(historical_categorized_csv_path)
+hist_df = pd.read_csv(historical_categorized_csv_path, parse_dates=["datetime"])
 category_map_regex = list(
     set([(row["pattern"], row["category"]) for index, row in hist_df.iterrows()])
 )
@@ -349,10 +349,21 @@ for pattern in all_patterns:
     for i in range(len(category_map_regex)):
         if category_map_regex[i][0] == pattern:
             mapped_categories.add(category_map_regex[i][1])
+    import ipdb; ipdb.set_trace()
     assert (
         len(mapped_categories) == 1
     ), "Error: Found the same pattern mapping to more than one category"
 category_map_regex = dict(category_map_regex)
+
+# assert all patterns in historical file indeed do match text of that transaction
+def assert_pattern_matches_text(pattern, text):
+    assert re.compile(pattern).search(text) != None, "Error: found pattern that doesn't match note (text)"
+hist_df.apply(lambda row: assert_pattern_matches_text(row["pattern"], row["note"]), axis=1)
+
+# assert all categories are valid in historical file
+def assert_category_dtype(category):
+    assert type(category) == str, "category must be string"
+hist_df["category"].apply(lambda category: assert_category_dtype(category))
 
 # make sure no ids are duplicated
 assert len(hist_df) == len(
@@ -364,41 +375,35 @@ assert set(hist_df.id.values).issubset(
     df.id.values
 ), "Error: not all historical transactions accounted for in cleaned or raw csvs"
 
+# apply patterns on new data (df)
+def get_matched_pattern(text):
+    for pattern in category_map_regex:
+        if re.compile(pattern).search(text) != None:
+            return pattern
+
+def get_category_from_pattern(pattern):
+    if pattern == None:
+        return ()
+    else:
+        return category_map_regex[pattern]
+
+df["pattern"] = df["note"].apply(lambda text: get_matched_pattern(text))
+df["category"] = df["pattern"].apply(lambda pattern: get_category_from_pattern(pattern))
+
+
 # update df to include history
 df = df[~df.id.isin(hist_df.id.values)]
 df = pd.concat([df, hist_df], axis=0, ignore_index=True)
+df = df.sort_values("datetime", ascending=False, ignore_index=True)
 # make sure no ids are duplicated
 assert len(hist_df) == len(
     hist_df.id.value_counts()
 ), "Error: found duplicate IDs in concatenated history + recent file (really weird if you get this error)"
 
-# apply the patterns, make sure no text matches more than one pattern
-
-
-
-def get_matched_pattern(text):
-    matched_pattern = None
-    num_matches = 0  # there should not be more than one regex match
-    for pattern in category_map_regex:
-        if re.compile(pattern).search(text) != None:
-            num_matches += 1
-            matched_pattern = pattern
-    assert num_matches <= 1, "Error: multiple patterns match text"
-    return matched_pattern
-
-
-df["pattern"] = df["note"].apply(lambda text: get_matched_pattern(text))
-import ipdb
-
-ipdb.set_trace()
-df["category"] = df["pattern"].apply(lambda pattern: category_map_regex[pattern])
-
 # ask user to confirm or override
+print(df)
 
-for i in len(df[df["category"] == None]):
-    category = input(
-        'Please categorize this transaction e.g. ("entertainment", "snowboarding", "pass")'
-    )
-    assert type(category) == tuple, "category must be tuple of strings"
-    for item in category:
-        assert type(item) == str, "category must be tuple of strings"
+import ipdb; ipdb.set_trace()
+category = input(
+    'Please categorize this transaction e.g. ("entertainment", "snowboarding", "pass")'
+)
