@@ -48,7 +48,9 @@ then
     done
 
 
-    echo "Processing raw files..."
+    echo
+    echo
+    echo "Running python script..."
     cd $code_folder
     python3 pipeline.py $data_folder
 fi

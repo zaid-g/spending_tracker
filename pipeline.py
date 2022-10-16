@@ -1,8 +1,6 @@
-from pprint import pprint as pp
 import ipdb
 import re
 import json
-from pprint import pprint as p
 import hashlib
 import datetime
 import dateutil.parser
@@ -304,7 +302,6 @@ assert len(df) == len(
     df.id.value_counts()
 ), "Error: found duplicate ID(s) in cleaned files"
 
-print(df[["datetime", "amount", "source", "note"]])
 
 # first read entire df including written history
 hist_df = pd.read_csv(historical_categorized_csv_path, parse_dates=["datetime"])
