@@ -399,13 +399,13 @@ while True:
     print(
         df[
             [
-                "note",
                 "datetime",
                 "amount",
-                "source",
-                "preselected_category",
+                "note",
                 "pattern",
                 "category",
+                "source",
+                "preselected_category",
             ]
         ]
     )
@@ -414,7 +414,7 @@ while True:
         try:
             transaction_index = int(
                 input(
-                    "Does this look good? If so, enter -1.\nOtherwise, select row you would like to categorize.\nEnter -2 for breakpoint\n"
+                    "\nSelect row you would like to categorize.\nEnter -1 if this looks good.\nEnter -2 for breakpoint.\nEnter -3 to quit\n"
                 )
             )
             if transaction_index >= 0:
@@ -428,6 +428,8 @@ while True:
         ipdb.set_trace()
         print("Exiting without saving")
         break
+    if transaction_index == -3:
+        exit()
     print("\n      ***** Transaction Details ******         \n")
     print(df.loc[transaction_index])
     print("\n      ***** All Categories ******         \n")
@@ -458,4 +460,5 @@ while True:
         except:
             print("Error: inputted pattern does not match text (note)")
 
+print("Writing to history.csv file")
 df.to_csv(data_fol_path + "history.csv", index=False)
