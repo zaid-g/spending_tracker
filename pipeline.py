@@ -426,6 +426,8 @@ while True:
         break
     if transaction_index == -2:
         ipdb.set_trace()
+        print("Exiting without saving")
+        break
     print("\n      ***** Transaction Details ******         \n")
     print(df.loc[transaction_index])
     print("\n      ***** All Categories ******         \n")
