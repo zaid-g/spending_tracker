@@ -85,7 +85,10 @@ assert len(df) == len(
 
 
 # first read entire df including written history
-hist_df = pd.read_csv(historical_categorized_csv_path, parse_dates=["datetime"])
+if os.path.isfile(historical_categorized_csv_path) is False:
+    hist_df = pd.DataFrame(columns=["id","datetime","amount","source","preselected_category","note","category","pattern"])
+else:
+    hist_df = pd.read_csv(historical_categorized_csv_path, parse_dates=["datetime"])
 
 # assert all patterns in historical file indeed do match text of that transaction
 hist_df.apply(
@@ -156,7 +159,7 @@ while True:
         try:
             transaction_index = int(
                 input(
-                    "\nSelect row you would like to categorize.\nEnter -1 if this looks good.\nEnter -2 for breakpoint.\nEnter -3 to quit\n"
+                    "\nSelect row you would like to categorize.\nEnter -1 if this looks good.\nEnter -2 for breakpoint.\nEnter -3 to quit without saving.\n"
                 )
             )
             if transaction_index >= 0:
@@ -183,12 +186,13 @@ while True:
     if inputted_category.isdigit():
         df.loc[transaction_index, "category"] = all_categories[int(inputted_category)]
     else:
+        inputted_category = inputted_category.strip("/").lower()
         df.loc[transaction_index, "category"] = inputted_category
     while True:
         print("\n      ***** All Patterns ******         \n")
         for i in range(len(all_patterns)):
             print(f"{i}: {all_patterns[i]}")
-        inputted_pattern = input("Add a pattern for this transaction (enter to skip)\n")
+        inputted_pattern = input(f"Add a pattern for this transaction. Assume text is lower-cased. (enter to skip)\n\n{df.loc[transaction_index, 'note']}\n")
         if inputted_pattern == "":
             break
         try:

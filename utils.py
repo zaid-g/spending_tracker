@@ -250,6 +250,7 @@ def make_sure_category_dtype(category):
 
 
 def make_sure_pattern_matches_text(pattern, text):
+    text = text.lower()
     if pd.isna(pattern):
         return
     assert (
