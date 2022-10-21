@@ -8,8 +8,8 @@ echo
 
 code_folder=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 data_folder=$(realpath $1)
-raw_csv_folder=$data_folder/csv/raw
-cleaned_csv_folder=$data_folder/csv/cleaned
+raw_csv_folder=$data_folder/raw
+cleaned_csv_folder=$data_folder/cleaned
 
 cd $raw_csv_folder
 echo "Are all these correct?"

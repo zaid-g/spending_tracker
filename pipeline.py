@@ -20,8 +20,8 @@ from utils import *
 
 data_fol_path = sys.argv[1] + "/"
 historical_categorized_csv_path = data_fol_path + "history.csv"
-raw_csv_path = data_fol_path + "csv/raw/"
-cleaned_csv_path = data_fol_path + "csv/cleaned/"
+raw_csv_path = data_fol_path + "raw/"
+cleaned_csv_path = data_fol_path + "cleaned/"
 raw_csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
 raw_csv_file_names = [
     file_name for file_name in raw_csv_file_names if file_name[0] != "."
@@ -211,5 +211,5 @@ while True:
         except:
             print("Error: inputted pattern does not match text (note)")
 
-print("Writing to history.csv file")
+print("Writing history.")
 df.to_csv(data_fol_path + "history.csv", index=False)
