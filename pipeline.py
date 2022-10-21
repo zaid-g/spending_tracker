@@ -148,10 +148,10 @@ while True:
         df[
             [
                 "datetime",
-                "amount",
                 "note",
-                "pattern",
                 "category",
+                "pattern",
+                "amount",
                 "source",
                 "preselected_category",
             ]
@@ -190,7 +190,8 @@ while True:
     )
     if inputted_category != "":
         if inputted_category.isdigit():
-            df.loc[transaction_index, "category"] = all_categories[int(inputted_category)]
+            inputted_category = all_categories[int(inputted_category)]
+            df.loc[transaction_index, "category"] = inputted_category
         else:
             inputted_category = inputted_category.strip("/").lower()
             df.loc[transaction_index, "category"] = inputted_category
@@ -200,6 +201,7 @@ while True:
                 print(f"{i}: {all_patterns[i]}")
             inputted_pattern = input(f"Add a pattern for this transaction. Assume text is lower-cased. (enter to skip)\n\n{df.loc[transaction_index, 'note']}\n")
             if inputted_pattern == "":
+                all_categories.append(inputted_category)
                 break
             try:
                 if inputted_pattern.isdigit():
