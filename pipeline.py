@@ -228,13 +228,20 @@ while True:
                 make_sure_pattern_matches_text(
                     inputted_pattern, df.loc[transaction_index, "note"]
                 )
-                if (inputted_pattern, inputted_category) not in pattern_category_map_list:
+                if (
+                    inputted_pattern,
+                    inputted_category,
+                ) not in pattern_category_map_list:
                     pattern_category_map_list_copy = deepcopy(pattern_category_map_list)
-                    pattern_category_map_list_copy.append((inputted_pattern, inputted_category))
+                    pattern_category_map_list_copy.append(
+                        (inputted_pattern, inputted_category)
+                    )
                     make_sure_no_pattern_maps_to_more_than_one_category(
                         pattern_category_map_list_copy
                     )
-                    pattern_category_map_list.append((inputted_pattern, inputted_category))
+                    pattern_category_map_list.append(
+                        (inputted_pattern, inputted_category)
+                    )
                     pattern_category_map_dict[inputted_pattern] = inputted_category
                     df.loc[transaction_index, "pattern"] = inputted_pattern
                     if inputted_category not in all_categories:
