@@ -15,7 +15,7 @@ from os import listdir
 from os.path import isfile, join
 from utils import *
 
-pd.set_option('display.max_rows', 10000)
+pd.set_option("display.max_rows", 10000)
 
 
 # ---------- [read csv file names and make sure no problems] ----------:
@@ -89,7 +89,18 @@ assert len(df) == len(
 
 # first read entire df including written history
 if os.path.isfile(historical_categorized_csv_path) is False:
-    hist_df = pd.DataFrame(columns=["id","datetime","amount","source","preselected_category","note","category","pattern"])
+    hist_df = pd.DataFrame(
+        columns=[
+            "id",
+            "datetime",
+            "amount",
+            "source",
+            "preselected_category",
+            "note",
+            "category",
+            "pattern",
+        ]
+    )
 else:
     hist_df = pd.read_csv(historical_categorized_csv_path, parse_dates=["datetime"])
 
@@ -99,12 +110,15 @@ hist_df.apply(
 )
 
 # store all possible categories and patterns in variable
-category_map_regex, category_map_regex_dict = extract_patterns_categories_from_history(
-    hist_df
-)
+(
+    pattern_category_map_list,
+    pattern_category_map_dict,
+    all_categories,
+    all_patterns,
+) = extract_patterns_categories_from_history(hist_df)
 
 # make sure no pattern maps to more than one category
-make_sure_no_pattern_maps_to_more_than_one_category(category_map_regex)
+make_sure_no_pattern_maps_to_more_than_one_category(pattern_category_map_list)
 
 
 # assert all categories are valid in historical file
@@ -122,10 +136,10 @@ assert set(hist_df.id.values).issubset(
 
 # apply patterns on new data (df)
 df["pattern"] = df["note"].apply(
-    lambda text: get_matched_pattern(text, category_map_regex_dict)
+    lambda text: get_matched_pattern(text, pattern_category_map_dict)
 )
 df["category"] = df["pattern"].apply(
-    lambda pattern: get_category_from_pattern(pattern, category_map_regex_dict)
+    lambda pattern: get_category_from_pattern(pattern, pattern_category_map_dict)
 )
 
 
@@ -143,22 +157,23 @@ assert len(hist_df) == len(
 # sort categories and patterns for visual display
 while True:
 
+    all_categories.sort()
+    all_patterns.sort()
+
     print()
     print(
         df[
             [
-                "datetime",
                 "note",
                 "category",
                 "pattern",
                 "amount",
+                "datetime",
                 "source",
                 "preselected_category",
             ]
         ]
     )
-
-    all_patterns, all_categories = get_all_patterns_categories(category_map_regex)
 
     while True:
         try:
@@ -182,6 +197,7 @@ while True:
         exit()
     print("\n      ***** Transaction Details ******         \n")
     print(df.loc[transaction_index])
+    print(df.loc[transaction_index, "note"])
     print("\n      ***** All Categories ******         \n")
     for i in range(len(all_categories)):
         print(f"{i}: {all_categories[i]}")
@@ -199,9 +215,12 @@ while True:
             print("\n      ***** All Patterns ******         \n")
             for i in range(len(all_patterns)):
                 print(f"{i}: {all_patterns[i]}")
-            inputted_pattern = input(f"Add a pattern for this transaction. Assume text is lower-cased. (enter to skip)\n\n{df.loc[transaction_index, 'note']}\n")
+            inputted_pattern = input(
+                f"Add a pattern for this transaction. Assume text is lower-cased. (enter to skip)\n\n{df.loc[transaction_index, 'note']}\n"
+            )
             if inputted_pattern == "":
-                all_categories.append(inputted_category)
+                if inputted_category not in all_categories:
+                    all_categories.append(inputted_category)
                 break
             try:
                 if inputted_pattern.isdigit():
@@ -209,12 +228,19 @@ while True:
                 make_sure_pattern_matches_text(
                     inputted_pattern, df.loc[transaction_index, "note"]
                 )
-                category_map_regex_copy = deepcopy(category_map_regex)
-                category_map_regex_copy.append((inputted_pattern, inputted_category))
-                make_sure_no_pattern_maps_to_more_than_one_category(category_map_regex_copy)
-                category_map_regex.append((inputted_pattern, inputted_category))
-                category_map_regex_dict[inputted_pattern] = inputted_category
-                df.loc[transaction_index, "pattern"] = inputted_pattern
+                if (inputted_pattern, inputted_category) not in pattern_category_map_list:
+                    pattern_category_map_list_copy = deepcopy(pattern_category_map_list)
+                    pattern_category_map_list_copy.append((inputted_pattern, inputted_category))
+                    make_sure_no_pattern_maps_to_more_than_one_category(
+                        pattern_category_map_list_copy
+                    )
+                    pattern_category_map_list.append((inputted_pattern, inputted_category))
+                    pattern_category_map_dict[inputted_pattern] = inputted_category
+                    df.loc[transaction_index, "pattern"] = inputted_pattern
+                    if inputted_category not in all_categories:
+                        all_categories.append(inputted_category)
+                    if inputted_pattern not in all_patterns:
+                        all_patterns.append(inputted_pattern)
                 break
             except:
                 print("Error: inputted pattern does not match text (note)")

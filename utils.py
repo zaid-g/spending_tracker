@@ -44,7 +44,7 @@ def venmo(file_path, file_name, cleaned_csv_path):
     df = df[["Datetime", "Amount (total)", "Note"]]
     df.columns = ["datetime", "amount", "note"]
     chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-    df["amount"] = df["amount"].apply(lambda x: rm_chars(x))
+    df["amount"] = df["amount"].apply(lambda x: -rm_chars(x))
     df["source"] = "venmo"
     df["preselected_category"] = None
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
@@ -118,12 +118,10 @@ def amazon(file_path, file_name, cleaned_csv_path):
 
 
 def chase(file_path, file_name, cleaned_csv_path):
-    df = pd.read_csv(
-        file_path,
-        index_col=False
-    )
+    df = pd.read_csv(file_path, index_col=False)
     df = df[["Posting Date", "Amount", "Description"]]
     df.columns = ["datetime", "amount", "note"]
+    df["amount"] = df["amount"].apply(lambda x: -x)
     df["source"] = "chase"
     df["preselected_category"] = None
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
@@ -235,7 +233,15 @@ def detect_file_source(file_path):
         df = pd.read_csv(
             file_path,
         )
-        if list(df.columns) == ['Details', 'Posting Date', 'Description', 'Amount', 'Type', 'Balance', 'Check or Slip #']:
+        if list(df.columns) == [
+            "Details",
+            "Posting Date",
+            "Description",
+            "Amount",
+            "Type",
+            "Balance",
+            "Check or Slip #",
+        ]:
             return chase
     except:
         pass
@@ -249,19 +255,16 @@ def contains_date_range(file_name):
     return True
 
 
-def get_all_patterns_categories(category_map_regex):
-    all_patterns = sorted(list(set([pattern for pattern, _ in category_map_regex])))
-    all_categories = sorted(list(set([category for _, category in category_map_regex])))
-    return all_patterns, all_categories
-
-
-def make_sure_no_pattern_maps_to_more_than_one_category(category_map_regex):
-    all_patterns, all_categories = get_all_patterns_categories(category_map_regex)
-    for pattern in all_patterns:
+def make_sure_no_pattern_maps_to_more_than_one_category(pattern_category_map_list):
+    patterns = sorted(list(set([pattern for pattern, _ in pattern_category_map_list])))
+    categories = sorted(
+        list(set([category for _, category in pattern_category_map_list]))
+    )
+    for pattern in patterns:
         mapped_categories = set()
-        for i in range(len(category_map_regex)):
-            if category_map_regex[i][0] == pattern:
-                mapped_categories.add(category_map_regex[i][1])
+        for i in range(len(pattern_category_map_list)):
+            if pattern_category_map_list[i][0] == pattern:
+                mapped_categories.add(pattern_category_map_list[i][1])
         assert (
             len(mapped_categories) == 1
         ), "Error: Found the same pattern mapping to more than one category"
@@ -284,7 +287,7 @@ def make_sure_pattern_matches_text(pattern, text):
 
 def extract_patterns_categories_from_history(hist_df):
     """returns tuple and dict objects"""
-    category_map_regex = list(
+    pattern_category_map_list = list(
         set(
             [
                 (row["pattern"], row["category"])
@@ -293,18 +296,25 @@ def extract_patterns_categories_from_history(hist_df):
             ]
         )
     )
-    category_map_regex_dict = dict(category_map_regex)
-    return category_map_regex, category_map_regex_dict
+    pattern_category_map_dict = dict(pattern_category_map_list)
+    all_categories = [i for i in hist_df["category"].unique() if not pd.isna(i)]
+    all_patterns = [i for i in hist_df["pattern"].unique() if not pd.isna(i)]
+    return (
+        pattern_category_map_list,
+        pattern_category_map_dict,
+        all_categories,
+        all_patterns,
+    )
 
 
-def get_matched_pattern(text, category_map_regex_dict):
-    for pattern in category_map_regex_dict:
+def get_matched_pattern(text, pattern_category_map_dict):
+    for pattern in pattern_category_map_dict:
         if re.compile(pattern).search(text) != None:
             return pattern
 
 
-def get_category_from_pattern(pattern, category_map_regex_dict):
+def get_category_from_pattern(pattern, pattern_category_map_dict):
     if pattern == None:
         return None
     else:
-        return category_map_regex_dict[pattern]
+        return pattern_category_map_dict[pattern]
