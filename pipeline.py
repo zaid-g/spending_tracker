@@ -185,7 +185,7 @@ while True:
             if transaction_index >= 0:
                 df.loc[transaction_index]
             break
-        except ValueError:
+        except:
             print("Not an integer value or out of range...")
     if transaction_index == -1:
         break
