@@ -58,7 +58,7 @@ def venmo(file_path, file_name, cleaned_csv_path):
     print("Cleaned one venmo file...")
 
 
-def amex(file_path, file_name):
+def amex(file_path, file_name, cleaned_csv_path):
     df = pd.read_csv(
         file_path,
     )
@@ -118,7 +118,23 @@ def amazon(file_path, file_name, cleaned_csv_path):
 
 
 def chase(file_path, file_name, cleaned_csv_path):
-    pass
+    df = pd.read_csv(
+        file_path,
+        index_col=False
+    )
+    df = df[["Posting Date", "Amount", "Description"]]
+    df.columns = ["datetime", "amount", "note"]
+    df["source"] = "chase"
+    df["preselected_category"] = None
+    df = df[["datetime", "amount", "source", "preselected_category", "note"]]
+    df["datetime"] = df["datetime"].apply(
+        lambda datetime_string: dateutil.parser.parse(datetime_string)
+    )
+    df["id"] = df.apply(
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
+    )
+    df.to_csv(cleaned_csv_path + "chase" + file_name, index=False)
+    print("Cleaned one chase file...")
 
 
 def detect_file_source(file_path):
@@ -213,6 +229,14 @@ def detect_file_source(file_path):
             "Amount",
         ]:
             return amex
+    except:
+        pass
+    try:
+        df = pd.read_csv(
+            file_path,
+        )
+        if list(df.columns) == ['Details', 'Posting Date', 'Description', 'Amount', 'Type', 'Balance', 'Check or Slip #']:
+            return chase
     except:
         pass
     raise Exception(f"Could not identify file {file_path}")

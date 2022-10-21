@@ -10,6 +10,9 @@ code_folder=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 data_folder=$(realpath $1)
 raw_csv_folder=$data_folder/raw
 cleaned_csv_folder=$data_folder/cleaned
+mkdir -p $data_folder
+mkdir -p $raw_csv_folder
+mkdir -p $cleaned_csv_folder
 
 cd $raw_csv_folder
 echo "Are all these correct?"

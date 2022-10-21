@@ -1,1 +1,1 @@
-# Positive is receiving money, negative is paying money.
+# Positive is money out, negative is money into account

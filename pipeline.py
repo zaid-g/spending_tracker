@@ -15,6 +15,9 @@ from os import listdir
 from os.path import isfile, join
 from utils import *
 
+pd.set_option('display.max_rows', 10000)
+
+
 # ---------- [read csv file names and make sure no problems] ----------:
 
 
@@ -139,6 +142,8 @@ assert len(hist_df) == len(
 # time to ask user to confirm or override
 # sort categories and patterns for visual display
 while True:
+
+    print()
     print(
         df[
             [
@@ -181,35 +186,36 @@ while True:
     for i in range(len(all_categories)):
         print(f"{i}: {all_categories[i]}")
     inputted_category = input(
-        f"\nCategorize this transaction by typing in category or selecting index of pre-existing category:\n"
+        f"\nCategorize this transaction by typing in category or selecting index of pre-existing category (enter to skip):\n"
     )
-    if inputted_category.isdigit():
-        df.loc[transaction_index, "category"] = all_categories[int(inputted_category)]
-    else:
-        inputted_category = inputted_category.strip("/").lower()
-        df.loc[transaction_index, "category"] = inputted_category
-    while True:
-        print("\n      ***** All Patterns ******         \n")
-        for i in range(len(all_patterns)):
-            print(f"{i}: {all_patterns[i]}")
-        inputted_pattern = input(f"Add a pattern for this transaction. Assume text is lower-cased. (enter to skip)\n\n{df.loc[transaction_index, 'note']}\n")
-        if inputted_pattern == "":
-            break
-        try:
-            if inputted_pattern.isdigit():
-                inputted_pattern = all_patterns[int(inputted_pattern)]
-            make_sure_pattern_matches_text(
-                inputted_pattern, df.loc[transaction_index, "note"]
-            )
-            category_map_regex_copy = deepcopy(category_map_regex)
-            category_map_regex_copy.append((inputted_pattern, inputted_category))
-            make_sure_no_pattern_maps_to_more_than_one_category(category_map_regex_copy)
-            category_map_regex.append((inputted_pattern, inputted_category))
-            category_map_regex_dict[inputted_pattern] = inputted_category
-            df.loc[transaction_index, "pattern"] = inputted_pattern
-            break
-        except:
-            print("Error: inputted pattern does not match text (note)")
+    if inputted_category != "":
+        if inputted_category.isdigit():
+            df.loc[transaction_index, "category"] = all_categories[int(inputted_category)]
+        else:
+            inputted_category = inputted_category.strip("/").lower()
+            df.loc[transaction_index, "category"] = inputted_category
+        while True:
+            print("\n      ***** All Patterns ******         \n")
+            for i in range(len(all_patterns)):
+                print(f"{i}: {all_patterns[i]}")
+            inputted_pattern = input(f"Add a pattern for this transaction. Assume text is lower-cased. (enter to skip)\n\n{df.loc[transaction_index, 'note']}\n")
+            if inputted_pattern == "":
+                break
+            try:
+                if inputted_pattern.isdigit():
+                    inputted_pattern = all_patterns[int(inputted_pattern)]
+                make_sure_pattern_matches_text(
+                    inputted_pattern, df.loc[transaction_index, "note"]
+                )
+                category_map_regex_copy = deepcopy(category_map_regex)
+                category_map_regex_copy.append((inputted_pattern, inputted_category))
+                make_sure_no_pattern_maps_to_more_than_one_category(category_map_regex_copy)
+                category_map_regex.append((inputted_pattern, inputted_category))
+                category_map_regex_dict[inputted_pattern] = inputted_category
+                df.loc[transaction_index, "pattern"] = inputted_pattern
+                break
+            except:
+                print("Error: inputted pattern does not match text (note)")
 
 print("Writing history.")
 df.to_csv(data_fol_path + "history.csv", index=False)
