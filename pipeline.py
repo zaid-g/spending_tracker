@@ -153,6 +153,10 @@ assert len(hist_df) == len(
     hist_df.id.value_counts()
 ), "Error: found duplicate IDs in concatenated history + recent file (really weird if you get this error)"
 
+
+# ---------- [prompt user input and finish] ----------:
+
+
 # time to ask user to confirm or override
 # sort categories and patterns for visual display
 while True:
