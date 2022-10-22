@@ -1,17 +1,9 @@
 from copy import deepcopy
 import ipdb
-import re
-import json
-import datetime
-import dateutil.parser
-import re
 import glob
 import sys
-import numpy as np
 import pandas as pd
 import os
-from os import listdir
-from os.path import isfile, join
 from utils import *
 
 pd.set_option("display.max_rows", 10000)
@@ -24,7 +16,7 @@ data_fol_path = sys.argv[1] + "/"
 historical_categorized_csv_path = data_fol_path + "history.csv"
 raw_csv_path = data_fol_path + "raw/"
 cleaned_csv_path = data_fol_path + "cleaned/"
-raw_csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
+raw_csv_file_names = [f for f in os.listdir(raw_csv_path) if os.path.isfile(os.path.join(raw_csv_path, f))]
 raw_csv_file_names = [
     file_name for file_name in raw_csv_file_names if file_name[0] != "."
 ]  # remove hidden raw_csv_file_names
@@ -46,7 +38,7 @@ for file_name in raw_csv_file_names:
     formatted_file_path = raw_csv_path + formatted_file_name
     os.rename(file_path, formatted_file_path)
 
-raw_csv_file_names = [f for f in listdir(raw_csv_path) if isfile(join(raw_csv_path, f))]
+raw_csv_file_names = [f for f in os.listdir(raw_csv_path) if os.path.isfile(os.path.join(raw_csv_path, f))]
 raw_csv_file_names = [
     file_name for file_name in raw_csv_file_names if file_name[0] != "."
 ]  # remove hidden raw_csv_file_names
