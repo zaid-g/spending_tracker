@@ -54,7 +54,8 @@ def venmo(file_path, file_name, cleaned_csv_path):
     df["note"] = df["source"] + "_" + df["note"]
     df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
     df["id"] = df.apply(
-        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
+        axis=1,
     )
     df.to_csv(cleaned_csv_path + "venmo_" + file_name, index=False)
     print("Cleaned one venmo file...")
@@ -75,7 +76,8 @@ def amex(file_path, file_name, cleaned_csv_path):
     df["note"] = df["source"] + "_" + df["note"]
     df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
     df["id"] = df.apply(
-        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
+        axis=1,
     )
     df.to_csv(cleaned_csv_path + "amex" + file_name, index=False)
     print("Cleaned one amex file...")
@@ -99,7 +101,8 @@ def citi(file_path, file_name, cleaned_csv_path):
     df["note"] = df["source"] + "_" + df["note"]
     df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
     df["id"] = df.apply(
-        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
+        axis=1,
     )
     df.to_csv(cleaned_csv_path + "citi" + file_name, index=False)
     print("Cleaned one citi file...")
@@ -119,7 +122,8 @@ def amazon(file_path, file_name, cleaned_csv_path):
     df["note"] = df["source"] + "_" + df["note"]
     df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
     df["id"] = df.apply(
-        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
+        axis=1,
     )
     df.to_csv(cleaned_csv_path + "amazon" + file_name, index=False)
     print("Cleaned one amazon file...")
@@ -139,7 +143,8 @@ def chase(file_path, file_name, cleaned_csv_path):
     df["note"] = df["source"] + "_" + df["note"]
     df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
     df["id"] = df.apply(
-        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
+        axis=1,
     )
     df.to_csv(cleaned_csv_path + "chase" + file_name, index=False)
     print("Cleaned one chase file...")
