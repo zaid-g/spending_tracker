@@ -181,7 +181,7 @@ while True:
 
     while True:
         try:
-            if 'transaction_index' in locals():
+            if "transaction_index" in locals():
                 print(f"\nLast transaction index: {transaction_index}")
             transaction_index = int(
                 input(
@@ -202,7 +202,18 @@ while True:
     if transaction_index == -3:
         exit()
     print("\n      ***** Transaction Details ******         \n")
-    print(df.loc[transaction_index][["datetime", "amount", "source", "preselected_category", "pattern", "category"]])
+    print(
+        df.loc[transaction_index][
+            [
+                "datetime",
+                "amount",
+                "source",
+                "preselected_category",
+                "pattern",
+                "category",
+            ]
+        ]
+    )
     print()
     print(df.loc[transaction_index, "note"])
     print("\n      ***** All Categories ******         \n")

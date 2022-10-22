@@ -292,7 +292,7 @@ def make_sure_pattern_matches_text(pattern, text):
         return
     assert (
         re.compile(pattern).search(text) != None
-        ), f"Error: found pattern that doesn't match note (text). Pattern: {pattern} --- Text: {text}"
+    ), f"Error: found pattern that doesn't match note (text). Pattern: {pattern} --- Text: {text}"
 
 
 def extract_patterns_categories_from_history(hist_df):
