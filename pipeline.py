@@ -181,9 +181,11 @@ while True:
 
     while True:
         try:
+            if 'transaction_index' in locals():
+                print(f"\nLast transaction index: {transaction_index}")
             transaction_index = int(
                 input(
-                    "\nSelect row you would like to categorize.\nEnter -1 if this looks good.\nEnter -2 for breakpoint.\nEnter -3 to quit without saving.\n"
+                    "Select row you would like to categorize.\nEnter -1 if this looks good.\nEnter -2 for breakpoint.\nEnter -3 to quit without saving.\n"
                 )
             )
             if transaction_index >= 0:
@@ -200,7 +202,8 @@ while True:
     if transaction_index == -3:
         exit()
     print("\n      ***** Transaction Details ******         \n")
-    print(df.loc[transaction_index])
+    print(df.loc[transaction_index][["datetime", "amount", "source", "preselected_category", "pattern", "category"]])
+    print()
     print(df.loc[transaction_index, "note"])
     print("\n      ***** All Categories ******         \n")
     for i in range(len(all_categories)):
