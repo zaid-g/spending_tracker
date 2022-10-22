@@ -146,7 +146,7 @@ df["category"] = df["pattern"].apply(
 # update df to include history
 df = df[~df.id.isin(hist_df.id.values)]
 df = pd.concat([df, hist_df], axis=0, ignore_index=True)
-df = df.sort_values("datetime", ascending=False, ignore_index=True)
+df = df.sort_values(["datetime", "note"], ascending=False, ignore_index=True)
 df = df.sort_index(ascending=False)
 # make sure no ids are duplicated
 assert len(hist_df) == len(

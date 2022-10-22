@@ -51,6 +51,8 @@ def venmo(file_path, file_name, cleaned_csv_path):
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
+    df["note"] = df["source"] + "_" + df["note"]
+    df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
     df["id"] = df.apply(
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
     )
@@ -70,6 +72,8 @@ def amex(file_path, file_name, cleaned_csv_path):
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
+    df["note"] = df["source"] + "_" + df["note"]
+    df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
     df["id"] = df.apply(
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
     )
@@ -92,6 +96,8 @@ def citi(file_path, file_name, cleaned_csv_path):
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
+    df["note"] = df["source"] + "_" + df["note"]
+    df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
     df["id"] = df.apply(
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
     )
@@ -110,6 +116,8 @@ def amazon(file_path, file_name, cleaned_csv_path):
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
     df["amount"] = df["amount"].apply(lambda x: rm_chars(x))
+    df["note"] = df["source"] + "_" + df["note"]
+    df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
     df["id"] = df.apply(
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
     )
@@ -128,6 +136,8 @@ def chase(file_path, file_name, cleaned_csv_path):
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
+    df["note"] = df["source"] + "_" + df["note"]
+    df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
     df["id"] = df.apply(
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest(), axis=1
     )
@@ -282,7 +292,7 @@ def make_sure_pattern_matches_text(pattern, text):
         return
     assert (
         re.compile(pattern).search(text) != None
-    ), "Error: found pattern that doesn't match note (text)"
+        ), f"Error: found pattern that doesn't match note (text). Pattern: {pattern} --- Text: {text}"
 
 
 def extract_patterns_categories_from_history(hist_df):
