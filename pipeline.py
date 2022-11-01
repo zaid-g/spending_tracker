@@ -244,7 +244,7 @@ while True:
             for i in range(len(all_patterns)):
                 print(f"{i}: {all_patterns[i]}")
             inputted_pattern = input(
-                f"Add a pattern for this transaction. Assume text is lower-cased. (enter to skip)\n\n{df.loc[transaction_index, 'note']}\n"
+                    f"Add a pattern for category '{inputted_category}' based on this transaction. Assume text is lower-cased. (enter to skip)\n\n{df.loc[transaction_index, 'note']}\n"
             )
             if inputted_pattern == "":
                 if inputted_category not in all_categories:
