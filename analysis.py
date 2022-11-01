@@ -11,6 +11,29 @@ if os.path.isfile(historical_categorized_csv_path) is False:
 df = pd.read_csv(historical_categorized_csv_path, parse_dates=["datetime"])
 amount_by_category = df.groupby(by=["category"])["amount"].sum()
 print(amount_by_category.sort_values(ascending=False))
+
+
+# ---------- [mapped sanity checks] ----------:
+
+# amazon
+mapped_amazon_total = amount_by_category["mapped/amazon"]
+amazon_total = sum(
+    df[(df["source"] == "amazon_items") | (df["source"] == "amazon_refunds")].amount
+)
+print(
+    f"Category 'mapped/amazon' total = {mapped_amazon_total}, total amazon payments = {amazon_total}"
+)
+
+# venmo
+mapped_venmo_total = amount_by_category["mapped/venmo"]
+venmo_total = sum(df[df["source"] == "venmo"].amount)
+print(
+    f"Category 'mapped/venmo' total = {mapped_venmo_total}, total venmo payments = {venmo_total}"
+)
+
+
+# ---------- [ipdb] ----------:
+
 import ipdb
 
 ipdb.set_trace()

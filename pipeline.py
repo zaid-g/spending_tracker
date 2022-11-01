@@ -4,6 +4,7 @@ import glob
 import sys
 import pandas as pd
 import os
+import json
 from utils import *
 
 pd.set_option("display.max_rows", 10000)
@@ -23,9 +24,19 @@ raw_csv_file_names = [
     file_name for file_name in raw_csv_file_names if file_name[0] != "."
 ]  # remove hidden raw_csv_file_names
 
+with open(data_fol_path + "config.json") as f:
+    config = json.load(f)
+
+accounts = config["accounts"]
 
 # make sure all raw_csv_file_names have date range
 for file_name in raw_csv_file_names:
+    found_account = False
+    for account in accounts:
+        if account in file_name:
+            found_account = True
+    if not found_account:
+        raise Exception(f"File {file_name} does not match any existing account types {accounts}")
     if not contains_date_range(file_name):
         raise Exception(
             f"No date range detected in file {file}. Format is \n^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}"
