@@ -36,7 +36,9 @@ for file_name in raw_csv_file_names:
         if account in file_name:
             found_account = True
     if not found_account:
-        raise Exception(f"File {file_name} does not match any existing account types {accounts}")
+        raise Exception(
+            f"File {file_name} does not match any existing account types {accounts}"
+        )
     if not contains_date_range(file_name):
         raise Exception(
             f"No date range detected in file {file}. Format is \n^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}"

@@ -57,7 +57,7 @@ def venmo(file_path, file_name, cleaned_csv_path):
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
         axis=1,
     )
-    df.to_csv(cleaned_csv_path + "venmo_" + file_name, index=False)
+    df.to_csv(cleaned_csv_path + file_name, index=False)
     print("Cleaned one venmo file...")
 
 
@@ -79,7 +79,7 @@ def amex(file_path, file_name, cleaned_csv_path):
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
         axis=1,
     )
-    df.to_csv(cleaned_csv_path + "amex" + file_name, index=False)
+    df.to_csv(cleaned_csv_path + file_name, index=False)
     print("Cleaned one amex file...")
 
 
@@ -104,7 +104,7 @@ def citi(file_path, file_name, cleaned_csv_path):
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
         axis=1,
     )
-    df.to_csv(cleaned_csv_path + "citi" + file_name, index=False)
+    df.to_csv(cleaned_csv_path + file_name, index=False)
     print("Cleaned one citi file...")
 
 
@@ -128,7 +128,7 @@ def amazon_refunds(file_path, file_name, cleaned_csv_path):
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
         axis=1,
     )
-    df.to_csv(cleaned_csv_path + "amazon_refunds" + file_name, index=False)
+    df.to_csv(cleaned_csv_path + file_name, index=False)
     print("Cleaned one amazon_refunds file...")
 
 
@@ -149,7 +149,7 @@ def amazon_items(file_path, file_name, cleaned_csv_path):
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
         axis=1,
     )
-    df.to_csv(cleaned_csv_path + "amazon_items" + file_name, index=False)
+    df.to_csv(cleaned_csv_path + file_name, index=False)
     print("Cleaned one amazon_items file...")
 
 
@@ -170,7 +170,7 @@ def chase(file_path, file_name, cleaned_csv_path):
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
         axis=1,
     )
-    df.to_csv(cleaned_csv_path + "chase" + file_name, index=False)
+    df.to_csv(cleaned_csv_path + file_name, index=False)
     print("Cleaned one chase file...")
 
 
