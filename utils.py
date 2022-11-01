@@ -108,13 +108,37 @@ def citi(file_path, file_name, cleaned_csv_path):
     print("Cleaned one citi file...")
 
 
-def amazon(file_path, file_name, cleaned_csv_path):
+def amazon_refunds(file_path, file_name, cleaned_csv_path):
+    df = pd.read_csv(
+        file_path,
+    )
+    df["amount"] = df["Refund Amount"].apply(lambda x: rm_chars(x)) + df[
+        "Refund Tax Amount"
+    ].apply(lambda x: rm_chars(x))
+    df["amount"] = df["amount"] * -1
+    df = df[["Order Date", "amount", "Category", "Title"]]
+    df.columns = ["datetime", "amount", "preselected_category", "note"]
+    df["source"] = "amazon_refunds"
+    df["datetime"] = df["datetime"].apply(
+        lambda datetime_string: dateutil.parser.parse(datetime_string)
+    )
+    df["note"] = df["source"] + "_" + df["note"]
+    df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
+    df["id"] = df.apply(
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
+        axis=1,
+    )
+    df.to_csv(cleaned_csv_path + "amazon_refunds" + file_name, index=False)
+    print("Cleaned one amazon_refunds file...")
+
+
+def amazon_items(file_path, file_name, cleaned_csv_path):
     df = pd.read_csv(
         file_path,
     )
     df = df[["Order Date", "Item Total", "Category", "Title"]]
     df.columns = ["datetime", "amount", "preselected_category", "note"]
-    df["source"] = "amazon"
+    df["source"] = "amazon_items"
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
@@ -125,8 +149,8 @@ def amazon(file_path, file_name, cleaned_csv_path):
         lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
         axis=1,
     )
-    df.to_csv(cleaned_csv_path + "amazon" + file_name, index=False)
-    print("Cleaned one amazon file...")
+    df.to_csv(cleaned_csv_path + "amazon_items" + file_name, index=False)
+    print("Cleaned one amazon_items file...")
 
 
 def chase(file_path, file_name, cleaned_csv_path):
@@ -219,7 +243,34 @@ def detect_file_source(file_path):
             "Currency",
             "Group Name",
         ]:
-            return amazon
+            return amazon_items
+    except:
+        pass
+    try:
+        df = pd.read_csv(
+            file_path,
+        )
+        if list(df.columns) == [
+            "Order ID",
+            "Order Date",
+            "Title",
+            "Category",
+            "ASIN/ISBN",
+            "Website",
+            "Purchase Order Number",
+            "Refund Date",
+            "Refund Condition",
+            "Refund Amount",
+            "Refund Tax Amount",
+            "Tax Exemption Applied",
+            "Refund Reason",
+            "Quantity",
+            "Seller",
+            "Seller Credentials",
+            "Buyer Name",
+            "Group Name",
+        ]:
+            return amazon_refunds
     except:
         pass
     try:

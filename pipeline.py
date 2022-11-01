@@ -16,7 +16,9 @@ data_fol_path = sys.argv[1] + "/"
 historical_categorized_csv_path = data_fol_path + "history.csv"
 raw_csv_path = data_fol_path + "raw/"
 cleaned_csv_path = data_fol_path + "cleaned/"
-raw_csv_file_names = [f for f in os.listdir(raw_csv_path) if os.path.isfile(os.path.join(raw_csv_path, f))]
+raw_csv_file_names = [
+    f for f in os.listdir(raw_csv_path) if os.path.isfile(os.path.join(raw_csv_path, f))
+]
 raw_csv_file_names = [
     file_name for file_name in raw_csv_file_names if file_name[0] != "."
 ]  # remove hidden raw_csv_file_names
@@ -34,11 +36,15 @@ for file_name in raw_csv_file_names:
 
 for file_name in raw_csv_file_names:
     file_path = raw_csv_path + file_name
-    formatted_file_name = "".join(file_name.split()).lower()
+    formatted_file_name = (
+        "".join(file_name.split()).lower().replace("(", "").replace(")", "")
+    )
     formatted_file_path = raw_csv_path + formatted_file_name
     os.rename(file_path, formatted_file_path)
 
-raw_csv_file_names = [f for f in os.listdir(raw_csv_path) if os.path.isfile(os.path.join(raw_csv_path, f))]
+raw_csv_file_names = [
+    f for f in os.listdir(raw_csv_path) if os.path.isfile(os.path.join(raw_csv_path, f))
+]
 raw_csv_file_names = [
     file_name for file_name in raw_csv_file_names if file_name[0] != "."
 ]  # remove hidden raw_csv_file_names
