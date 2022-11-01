@@ -153,12 +153,32 @@ def amazon_items(file_path, file_name, cleaned_csv_path):
     print("Cleaned one amazon_items file...")
 
 
-def chase(file_path, file_name, cleaned_csv_path):
+def chase_freedom(file_path, file_name, cleaned_csv_path):
+    df = pd.read_csv(file_path, index_col=False)
+    # Make sure to get Post date not transaction date, that's what website
+    # search tool uses to filter/search
+    df = df[["Post Date", "Description", "Category", "Amount"]]
+    df.columns = ["datetime", "note", "preselected_category", "amount"]
+    df["amount"] = df["amount"].apply(lambda x: -x)
+    df["source"] = "chase_freedom"
+    df = df[["datetime", "amount", "source", "preselected_category", "note"]]
+    df["datetime"] = df["datetime"].apply(
+        lambda datetime_string: dateutil.parser.parse(datetime_string)
+    )
+    df["note"] = df["source"] + "_" + df["note"]
+    df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
+    df["id"] = df.apply(
+        lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[0:30],
+        axis=1,
+    )
+    df.to_csv(cleaned_csv_path + file_name, index=False)
+
+def chase_debit(file_path, file_name, cleaned_csv_path):
     df = pd.read_csv(file_path, index_col=False)
     df = df[["Posting Date", "Amount", "Description"]]
     df.columns = ["datetime", "amount", "note"]
     df["amount"] = df["amount"].apply(lambda x: -x)
-    df["source"] = "chase"
+    df["source"] = "chase_debit"
     df["preselected_category"] = None
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
     df["datetime"] = df["datetime"].apply(
@@ -171,7 +191,7 @@ def chase(file_path, file_name, cleaned_csv_path):
         axis=1,
     )
     df.to_csv(cleaned_csv_path + file_name, index=False)
-    print("Cleaned one chase file...")
+    print("Cleaned one chase debit file...")
 
 
 def detect_file_source(file_path):
@@ -308,7 +328,23 @@ def detect_file_source(file_path):
             "Balance",
             "Check or Slip #",
         ]:
-            return chase
+            return chase_debit
+    except:
+        pass
+    try:
+        df = pd.read_csv(
+            file_path,
+        )
+        if list(df.columns) == [
+            "Transaction Date",
+            "Post Date",
+            "Description",
+            "Category",
+            "Type",
+            "Amount",
+            "Memo",
+        ]:
+            return chase_freedom
     except:
         pass
     raise Exception(f"Could not identify file {file_path}")
@@ -375,7 +411,7 @@ def extract_patterns_categories_from_history(hist_df):
 
 def get_matched_pattern(text, pattern_category_map_dict):
     for pattern in pattern_category_map_dict:
-        if re.compile(pattern).search(text) != None:
+        if re.compile(pattern).search(text.lower()) != None:
             return pattern
 
 

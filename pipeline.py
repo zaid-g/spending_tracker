@@ -74,12 +74,12 @@ for file_name in raw_csv_file_names:
 
 cleaned_csv_file_names = glob.glob(os.path.join(cleaned_csv_path, "*.csv"))
 
-li = []
+df_list = []
 for filename in cleaned_csv_file_names:
     df = pd.read_csv(filename, index_col=None, header=0, parse_dates=["datetime"])
-    li.append(df)
+    df_list.append(df)
 
-df = pd.concat(li, axis=0, ignore_index=True)
+df = pd.concat(df_list, axis=0, ignore_index=True)
 
 df = df[
     [
