@@ -69,10 +69,13 @@ def extract_patterns_categories_from_history(hist_df):
     )
 
 
-def get_matched_pattern(text, pattern_category_map_dict):
-    for pattern in pattern_category_map_dict:
+def get_matched_pattern(text, pattern_category_map_list):
+    """ Returns longest pattern that matches text"""
+    matched_patterns = []
+    for pattern, _ in pattern_category_map_list:
         if re.compile(pattern).search(text.lower()) != None:
-            return pattern
+            matched_patterns.append(pattern)
+    return max(matched_patterns, key=len)
 
 
 def get_category_from_pattern(pattern, pattern_category_map_dict):

@@ -147,7 +147,7 @@ assert set(hist_df.id.values).issubset(
 
 # apply patterns on new data (df)
 df["pattern"] = df["note"].apply(
-    lambda text: get_matched_pattern(text, pattern_category_map_dict)
+    lambda text: get_matched_pattern(text, pattern_category_map_list)
 )
 df["category"] = df["pattern"].apply(
     lambda pattern: get_category_from_pattern(pattern, pattern_category_map_dict)
