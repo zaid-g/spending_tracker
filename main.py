@@ -145,7 +145,7 @@ assert set(hist_df.id.values).issubset(
     df.id.values
 ), "Error: not all historical transactions accounted for in cleaned or raw csvs"
 
-# apply patterns on new data (df)
+# apply patterns on new data
 df["pattern"] = df["note"].apply(
     lambda text: get_matched_pattern(text, pattern_category_map_list)
 )
