@@ -155,6 +155,7 @@ df["category"] = df["pattern"].apply(
 
 
 # update df to include history
+# first remove df rows that exist in historical df
 df = df[~df.id.isin(hist_df.id.values)]
 df = pd.concat([df, hist_df], axis=0, ignore_index=True)
 df = df.sort_values(["datetime", "note"], ascending=False, ignore_index=True)

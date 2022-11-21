@@ -75,6 +75,8 @@ def get_matched_pattern(text, pattern_category_map_list):
     for pattern, _ in pattern_category_map_list:
         if re.compile(pattern).search(text.lower()) != None:
             matched_patterns.append(pattern)
+    if len(matched_patterns) == 0:
+        return
     return max(matched_patterns, key=len)
 
 
