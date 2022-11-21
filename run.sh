@@ -21,7 +21,7 @@ echo "1. Is this the right folder containing raw CSV files?"
 echo
 echo $raw_csv_folder
 echo
-ls -lt $raw_csv_folder
+printf '%s\n' * | sort -k1.26
 echo
 echo "2. Do you have correct activated python virtual environment?"
 echo "3. Are you sure the csv's contain complete data up to at most one month from today's date?" 

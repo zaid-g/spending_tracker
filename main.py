@@ -190,7 +190,6 @@ while True:
         ]
     )
 
-
     while True:
         try:
             if "transaction_index" in locals():

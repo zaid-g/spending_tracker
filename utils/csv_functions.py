@@ -19,6 +19,10 @@ def merge_debit_credit_columns(row):
 
 
 def venmo(file_path, file_name, cleaned_csv_path):
+    source = "venmo"
+    assert (
+        source in file_name
+    ), f"Error: source '{source}' is not in file name '{file_name}'"
     df = pd.read_csv(
         file_path,
         skiprows=[0, 1],
@@ -37,7 +41,7 @@ def venmo(file_path, file_name, cleaned_csv_path):
     df.columns = ["datetime", "amount", "note"]
     chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
     df["amount"] = df["amount"].apply(lambda x: -rm_chars(x))
-    df["source"] = "venmo"
+    df["source"] = source
     df["preselected_category"] = None
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
     df["datetime"] = df["datetime"].apply(
@@ -54,12 +58,16 @@ def venmo(file_path, file_name, cleaned_csv_path):
 
 
 def amex(file_path, file_name, cleaned_csv_path):
+    source = "amex"
+    assert (
+        source in file_name
+    ), f"Error: source '{source}' is not in file name '{file_name}'"
     df = pd.read_csv(
         file_path,
     )
     df = df[["Date", "Amount", "Description"]]
     df.columns = ["datetime", "amount", "note"]
-    df["source"] = "amex"
+    df["source"] = source
     df["preselected_category"] = None
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
     df["datetime"] = df["datetime"].apply(
@@ -76,16 +84,19 @@ def amex(file_path, file_name, cleaned_csv_path):
 
 
 def citi(file_path, file_name, cleaned_csv_path):
+    source = "citi"
+    assert (
+        source in file_name
+    ), f"Error: source '{source}' is not in file name '{file_name}'"
     df = pd.read_csv(
         file_path,
     )
     if (sum(np.isnan(df.Credit.values)) + sum(np.isnan(df.Debit.values))) != len(df):
         raise Exception("Failed to parse debit/credit columns")
-
     df["amount"] = df.apply(lambda row: merge_debit_credit_columns(row), axis=1)
     df = df[["Date", "amount", "Description"]]
     df.columns = ["datetime", "amount", "note"]
-    df["source"] = "citi"
+    df["source"] = source
     df["preselected_category"] = None
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
     df["datetime"] = df["datetime"].apply(
@@ -102,6 +113,10 @@ def citi(file_path, file_name, cleaned_csv_path):
 
 
 def amazon_refunds(file_path, file_name, cleaned_csv_path):
+    source = "amazon_refunds"
+    assert (
+        source in file_name
+    ), f"Error: source '{source}' is not in file name '{file_name}'"
     df = pd.read_csv(
         file_path,
     )
@@ -111,7 +126,7 @@ def amazon_refunds(file_path, file_name, cleaned_csv_path):
     df["amount"] = df["amount"] * -1
     df = df[["Order Date", "amount", "Category", "Title"]]
     df.columns = ["datetime", "amount", "preselected_category", "note"]
-    df["source"] = "amazon_refunds"
+    df["source"] = source
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
@@ -126,12 +141,16 @@ def amazon_refunds(file_path, file_name, cleaned_csv_path):
 
 
 def amazon_items(file_path, file_name, cleaned_csv_path):
+    source = "amazon_items"
+    assert (
+        source in file_name
+    ), f"Error: source '{source}' is not in file name '{file_name}'"
     df = pd.read_csv(
         file_path,
     )
     df = df[["Order Date", "Item Total", "Category", "Title"]]
     df.columns = ["datetime", "amount", "preselected_category", "note"]
-    df["source"] = "amazon_items"
+    df["source"] = source
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
@@ -147,13 +166,17 @@ def amazon_items(file_path, file_name, cleaned_csv_path):
 
 
 def chase_freedom(file_path, file_name, cleaned_csv_path):
+    source = "chase_freedom"
+    assert (
+        source in file_name
+    ), f"Error: source '{source}' is not in file name '{file_name}'"
     df = pd.read_csv(file_path, index_col=False)
     # Make sure to get Post date not transaction date, that's what website
     # search tool uses to filter/search
     df = df[["Post Date", "Description", "Category", "Amount"]]
     df.columns = ["datetime", "note", "preselected_category", "amount"]
     df["amount"] = df["amount"].apply(lambda x: -x)
-    df["source"] = "chase_freedom"
+    df["source"] = source
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
@@ -169,11 +192,15 @@ def chase_freedom(file_path, file_name, cleaned_csv_path):
 
 
 def chase_debit(file_path, file_name, cleaned_csv_path):
+    source = "chase_debit"
+    assert (
+        source in file_name
+    ), f"Error: source '{source}' is not in file name '{file_name}'"
     df = pd.read_csv(file_path, index_col=False)
     df = df[["Posting Date", "Amount", "Description"]]
     df.columns = ["datetime", "amount", "note"]
     df["amount"] = df["amount"].apply(lambda x: -x)
-    df["source"] = "chase_debit"
+    df["source"] = source
     df["preselected_category"] = None
     df = df[["datetime", "amount", "source", "preselected_category", "note"]]
     df["datetime"] = df["datetime"].apply(
