@@ -36,10 +36,3 @@ venmo_total = sum(df[df["source"] == "venmo"].amount)
 print(
     f"\n\nCategory 'mapped/venmo' total = {mapped_venmo_total}, total venmo payments = {venmo_total}"
 )
-
-
-# ---------- [ipdb] ----------:
-
-import ipdb
-
-ipdb.set_trace()
