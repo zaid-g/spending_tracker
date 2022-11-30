@@ -3,13 +3,6 @@ import numpy as np
 import re
 
 
-def is_not_formatted(file_name):
-    match_ = re.search(r"\d{4}-\d{2}_formatted____", file_name)
-    if match_ == None:
-        return True
-    return False
-
-
 def contains_date_range(file_name):
     match_ = re.search(r"^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}", file_name)
     if match_ == None:
@@ -70,7 +63,7 @@ def extract_patterns_categories_from_history(hist_df):
 
 
 def get_matched_pattern(text, pattern_category_map_list):
-    """ Returns longest pattern that matches text"""
+    """Returns longest pattern that matches text"""
     matched_patterns = []
     for pattern, _ in pattern_category_map_list:
         if re.compile(pattern).search(text.lower()) != None:
