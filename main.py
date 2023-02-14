@@ -95,7 +95,7 @@ df = df[
 
 assert len(df) == len(
     df.id.value_counts()
-    ), f"Error: Found duplicate ID(s) in cleaned files:\n {df[df.id.isin(df.id.value_counts()[ df.id.value_counts() > 1 ].index)]}"
+), f"Error: Found duplicate ID(s) in cleaned files:\n {df[df.id.isin(df.id.value_counts()[ df.id.value_counts() > 1 ].index)]}"
 
 
 # first read entire df including written history
