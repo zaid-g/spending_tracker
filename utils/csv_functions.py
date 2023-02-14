@@ -42,8 +42,8 @@ def venmo(file_path, file_name, cleaned_csv_path):
     chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
     df["amount"] = df["amount"].apply(lambda x: -rm_chars(x))
     df["source"] = source
-    df["preselected_category"] = None
-    df = df[["datetime", "amount", "source", "preselected_category", "note"]]
+    df["third_party_category"] = None
+    df = df[["datetime", "amount", "source", "third_party_category", "note"]]
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
@@ -68,8 +68,8 @@ def amex(file_path, file_name, cleaned_csv_path):
     df = df[["Date", "Amount", "Description"]]
     df.columns = ["datetime", "amount", "note"]
     df["source"] = source
-    df["preselected_category"] = None
-    df = df[["datetime", "amount", "source", "preselected_category", "note"]]
+    df["third_party_category"] = None
+    df = df[["datetime", "amount", "source", "third_party_category", "note"]]
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
@@ -97,8 +97,8 @@ def citi(file_path, file_name, cleaned_csv_path):
     df = df[["Date", "amount", "Description"]]
     df.columns = ["datetime", "amount", "note"]
     df["source"] = source
-    df["preselected_category"] = None
-    df = df[["datetime", "amount", "source", "preselected_category", "note"]]
+    df["third_party_category"] = None
+    df = df[["datetime", "amount", "source", "third_party_category", "note"]]
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
@@ -125,7 +125,7 @@ def amazon_refunds(file_path, file_name, cleaned_csv_path):
     ].apply(lambda x: rm_chars(x))
     df["amount"] = df["amount"] * -1
     df = df[["Order Date", "amount", "Category", "Title"]]
-    df.columns = ["datetime", "amount", "preselected_category", "note"]
+    df.columns = ["datetime", "amount", "third_party_category", "note"]
     df["source"] = source
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
@@ -149,7 +149,7 @@ def amazon_items(file_path, file_name, cleaned_csv_path):
         file_path,
     )
     df = df[["Order Date", "Item Total", "Category", "Title"]]
-    df.columns = ["datetime", "amount", "preselected_category", "note"]
+    df.columns = ["datetime", "amount", "third_party_category", "note"]
     df["source"] = source
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
@@ -174,10 +174,10 @@ def chase_freedom(file_path, file_name, cleaned_csv_path):
     # Make sure to get Post date not transaction date, that's what website
     # search tool uses to filter/search
     df = df[["Post Date", "Description", "Category", "Amount"]]
-    df.columns = ["datetime", "note", "preselected_category", "amount"]
+    df.columns = ["datetime", "note", "third_party_category", "amount"]
     df["amount"] = df["amount"].apply(lambda x: -x)
     df["source"] = source
-    df = df[["datetime", "amount", "source", "preselected_category", "note"]]
+    df = df[["datetime", "amount", "source", "third_party_category", "note"]]
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )
@@ -201,8 +201,8 @@ def chase_debit(file_path, file_name, cleaned_csv_path):
     df.columns = ["datetime", "amount", "note"]
     df["amount"] = df["amount"].apply(lambda x: -x)
     df["source"] = source
-    df["preselected_category"] = None
-    df = df[["datetime", "amount", "source", "preselected_category", "note"]]
+    df["third_party_category"] = None
+    df = df[["datetime", "amount", "source", "third_party_category", "note"]]
     df["datetime"] = df["datetime"].apply(
         lambda datetime_string: dateutil.parser.parse(datetime_string)
     )

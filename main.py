@@ -88,7 +88,7 @@ df = df[
         "datetime",
         "amount",
         "source",
-        "preselected_category",
+        "third_party_category",
         "note",
     ]
 ]
@@ -106,7 +106,7 @@ if os.path.isfile(historical_categorized_csv_path) is False:
             "datetime",
             "amount",
             "source",
-            "preselected_category",
+            "third_party_category",
             "note",
             "category",
             "pattern",
@@ -186,7 +186,7 @@ while True:
                 "amount",
                 "datetime",
                 "source",
-                "preselected_category",
+                "third_party_category",
             ]
         ]
     )
@@ -194,12 +194,17 @@ while True:
     while True:
         try:
             if "transaction_index" in locals():
+                last_transaction_index = transaction_index
                 print(f"\nLast transaction index: {transaction_index}")
-            transaction_index = int(
-                input(
-                    "Select row you would like to categorize.\nEnter -1 if this looks good.\nEnter -2 for breakpoint.\nEnter -3 to quit without saving.\n"
-                )
+            transaction_index = input(
+                "Select row you would like to categorize.\nEnter -1 if this looks good.\nEnter -2 for breakpoint.\nEnter -3 to quit without saving.\n"
             )
+            if transaction_index == "":
+                if "last_transaction_index" in locals():
+                    transaction_index = last_transaction_index + 1
+                else:
+                    transaction_index = 0
+            transaction_index = int(transaction_index)
             if transaction_index >= 0:
                 df.loc[transaction_index]
             break
@@ -222,7 +227,7 @@ while True:
                 "datetime",
                 "amount",
                 "source",
-                "preselected_category",
+                "third_party_category",
                 "pattern",
                 "category",
             ]
@@ -230,6 +235,10 @@ while True:
     )
     print()
     print(df.loc[transaction_index, "note"])
+    if df.loc[transaction_index, "category"] != None:
+        print(
+            f'\n- This transaction is already categorized as **{df.loc[transaction_index, "category"]}**'
+        )
     print("\n      ***** All Categories ******         \n")
     for i in range(len(all_categories)):
         print(f"{i}: {all_categories[i]}")
