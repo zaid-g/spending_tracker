@@ -237,7 +237,7 @@ while True:
     print(df.loc[transaction_index, "note"])
     if df.loc[transaction_index, "category"] != None:
         print(
-            f'\n- This transaction is already categorized as **{df.loc[transaction_index, "category"]}**'
+            f'\n- This transaction is already categorized as **{df.loc[transaction_index, "category"]}** and matches pattern **{df.loc[transaction_index, "pattern"]}**'
         )
     print("\n      ***** All Categories ******         \n")
     for i in range(len(all_categories)):
