@@ -95,7 +95,7 @@ df = df[
 
 assert len(df) == len(
     df.id.value_counts()
-), "Error: found duplicate ID(s) in cleaned files"
+    ), f"Error: Found duplicate ID(s) in cleaned files:\n {df[df.id.isin(df.id.value_counts()[ df.id.value_counts() > 1 ].index)]}"
 
 
 # first read entire df including written history
@@ -203,6 +203,8 @@ while True:
             if transaction_index >= 0:
                 df.loc[transaction_index]
             break
+        except KeyboardInterrupt:
+            exit()
         except:
             print("Not an integer value or out of range...")
     if transaction_index == -1:
