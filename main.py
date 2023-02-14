@@ -235,7 +235,7 @@ while True:
     )
     print()
     print(df.loc[transaction_index, "note"])
-    if df.loc[transaction_index, "category"] != None:
+    if pd.notna(df.loc[transaction_index, "category"]):
         print(
             f'\n- This transaction is already categorized as **{df.loc[transaction_index, "category"]}** and matches pattern **{df.loc[transaction_index, "pattern"]}**'
         )
@@ -257,7 +257,7 @@ while True:
             for i in range(len(all_patterns)):
                 print(f"{i}: {all_patterns[i]}")
             inputted_pattern = input(
-                f"Add a pattern for category '{inputted_category}' based on this transaction. Assume text is lower-cased. (enter to skip)\n\n{df.loc[transaction_index, 'note']}\n"
+                f"\nAdd a pattern for category **{inputted_category}** based on this transaction. Assume text is lower-cased. (enter to skip)\n\n{df.loc[transaction_index, 'note']}\n"
             )
             if inputted_pattern == "":
                 if inputted_category not in all_categories:
