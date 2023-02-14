@@ -22,7 +22,7 @@ def make_sure_no_pattern_maps_to_more_than_one_category(pattern_category_map_lis
                 mapped_categories.add(pattern_category_map_list[i][1])
         assert (
             len(mapped_categories) == 1
-        ), "Error: Found the same pattern mapping to more than one category"
+        ), f"Error: Found the same pattern **{pattern}** mapping to more than one category **{mapped_categories}**"
 
 
 def make_sure_category_dtype(category):

@@ -1,4 +1,5 @@
 from copy import deepcopy
+import datetime
 import ipdb
 import glob
 import sys
@@ -157,14 +158,13 @@ df["category"] = df["pattern"].apply(
 # update df to include history
 # first remove df rows that exist in historical df
 df = df[~df.id.isin(hist_df.id.values)]
-df = pd.concat([df, hist_df], axis=0, ignore_index=True)
 df = df.sort_values(["datetime", "note"], ascending=False, ignore_index=True)
-df = df.sort_index(ascending=False)
+df = pd.concat([df, hist_df], axis=0, ignore_index=True)
+df.index = range(len(df) - 1, -1, -1)
 # make sure no ids are duplicated
 assert len(hist_df) == len(
     hist_df.id.value_counts()
 ), "Error: found duplicate IDs in concatenated history + recent file (really weird if you get this error)"
-
 
 # ---------- [prompt user input and finish] ----------:
 
@@ -220,7 +220,7 @@ while True:
         break
     if transaction_index == -3:
         exit()
-    print("\n      ***** Transaction Details ******         \n")
+    print("\n      ***** Transaction Details ******         ")
     print(
         df.loc[transaction_index][
             [
@@ -239,7 +239,7 @@ while True:
         print(
             f'\n- This transaction is already categorized as **{df.loc[transaction_index, "category"]}** and matches pattern **{df.loc[transaction_index, "pattern"]}**'
         )
-    print("\n      ***** All Categories ******         \n")
+    print("\n      ***** All Categories ******         ")
     for i in range(len(all_categories)):
         print(f"{i}: {all_categories[i]}")
     inputted_category = input(
@@ -294,4 +294,16 @@ while True:
                 print("Error: inputted pattern does not match text (note)")
 
 print("Writing history.")
-df.to_csv(data_fol_path + "history.csv", index=False)
+df[
+    [
+        "id",
+        "datetime",
+        "amount",
+        "source",
+        "third_party_category",
+        "note",
+        "preselected_category",
+        "pattern",
+        "category",
+    ]
+].to_csv(data_fol_path + "history.csv", index=False)
