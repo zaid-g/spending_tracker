@@ -172,7 +172,6 @@ assert len(hist_df) == len(
 # time to ask user to confirm or override
 # sort categories and patterns for visual display
 while True:
-
     all_categories.sort()
     all_patterns.sort()
 
