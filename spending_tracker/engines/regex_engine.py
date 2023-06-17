@@ -3,11 +3,6 @@ import numpy as np
 import re
 
 
-def contains_date_range(file_name):
-    match_ = re.search(r"^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}", file_name)
-    if match_ == None:
-        return False
-    return True
 
 
 def make_sure_no_pattern_maps_to_more_than_one_category(pattern_category_map_list):

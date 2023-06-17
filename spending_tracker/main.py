@@ -15,62 +15,14 @@ pd.set_option("display.max_rows", 10000)
 # ---------- [read csv file names and make sure no problems] ----------:
 
 
-data_fol_path = sys.argv[1] + "/"
-historical_categorized_csv_path = data_fol_path + "history.csv"
-raw_csv_path = data_fol_path + "raw/"
-cleaned_csv_path = data_fol_path + "cleaned/"
-raw_csv_file_names = [
-    f for f in os.listdir(raw_csv_path) if os.path.isfile(os.path.join(raw_csv_path, f))
-]
-raw_csv_file_names = [
-    file_name for file_name in raw_csv_file_names if file_name[0] != "."
-]  # remove hidden raw_csv_file_names
-
-with open(data_fol_path + "config.json") as f:
-    config = json.load(f)
-
-accounts = config["accounts"]
-
-# make sure all raw_csv_file_names have date range
-for file_name in raw_csv_file_names:
-    found_account = False
-    for account in accounts:
-        if account in file_name:
-            found_account = True
-    if not found_account:
-        raise Exception(
-            f"File {file_name} does not match any existing account types {accounts}"
-        )
-    if not contains_date_range(file_name):
-        raise Exception(
-            f"No date range detected in file {file}. Format is \n^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}"
-        )
-
+data_root_path = sys.argv[1] + "/"
 
 # ---------- [rm whitespace, lowercase csv file names, reread names] ----------:
-
-for file_name in raw_csv_file_names:
-    file_path = raw_csv_path + file_name
-    formatted_file_name = (
-        "".join(file_name.split()).lower().replace("(", "").replace(")", "")
-    )
-    formatted_file_path = raw_csv_path + formatted_file_name
-    os.rename(file_path, formatted_file_path)
-
-raw_csv_file_names = [
-    f for f in os.listdir(raw_csv_path) if os.path.isfile(os.path.join(raw_csv_path, f))
-]
-raw_csv_file_names = [
-    file_name for file_name in raw_csv_file_names if file_name[0] != "."
-]  # remove hidden raw_csv_file_names
 
 
 # ---------- [clean files] ----------:
 
 
-for file_name in raw_csv_file_names:
-    file_path = raw_csv_path + file_name
-    detect_file_source(file_path)(file_path, file_name, cleaned_csv_path)
 
 # ---------- [merge into final csv] ----------:
 
@@ -305,4 +257,4 @@ df[
         "pattern",
         "category",
     ]
-].to_csv(data_fol_path + "history.csv", index=False)
+].to_csv(data_root_path + "history.csv", index=False)
