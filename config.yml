@@ -1,0 +1,9 @@
+supported_accounts:
+  - amazon_items_2022
+  - amazon_refunds_2022
+  - citi_double_cash
+  - citi_custom_cash
+  - chase_freedom
+  - chase_debit
+  - amex_bluecash_preferred
+  - venmo

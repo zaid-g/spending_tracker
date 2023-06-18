@@ -1,3 +1,7 @@
+from dependency_injector.wiring import Provide, inject
+from spending_tracker.engines.raw_data_processing_engine import RawDataProcessingEngine
+from spending_tracker.engines.categorization_engine import CategorizationEngine
+from spending_tracker.containers.categorization_container import CategorizationContainer
 from copy import deepcopy
 import datetime
 import ipdb
@@ -6,72 +10,42 @@ import sys
 import pandas as pd
 import os
 import json
-from utils.pattern_functions import *
-from utils.csv_functions import *
 
 pd.set_option("display.max_rows", 10000)
 
 
-# ---------- [read csv file names and make sure no problems] ----------:
+@inject
+def main(
+    raw_data_processing_engine: RawDataProcessingEngine = Provide[
+        CategorizationContainer.raw_data_processing_engine
+    ],
+    categorization_engine: CategorizationEngine = Provide[
+        CategorizationContainer.categorization_engine
+    ],
+) -> None:
+    pass
 
 
-data_root_path = sys.argv[1] + "/"
-
-# ---------- [rm whitespace, lowercase csv file names, reread names] ----------:
-
-
-# ---------- [clean files] ----------:
-
-
-
-# ---------- [merge into final csv] ----------:
-
-cleaned_csv_file_names = glob.glob(os.path.join(cleaned_csv_path, "*.csv"))
-
-df_list = []
-for filename in cleaned_csv_file_names:
-    df = pd.read_csv(filename, index_col=None, header=0, parse_dates=["datetime"])
-    df_list.append(df)
-
-df = pd.concat(df_list, axis=0, ignore_index=True)
-
-df = df[
-    [
-        "id",
-        "datetime",
-        "amount",
-        "source",
-        "third_party_category",
-        "note",
-    ]
-]
-
-assert len(df) == len(
-    df.id.value_counts()
-), f"Error: Found duplicate ID(s) in cleaned files:\n {df[df.id.isin(df.id.value_counts()[ df.id.value_counts() > 1 ].index)]}"
-
-
-# first read entire df including written history
-if os.path.isfile(historical_categorized_csv_path) is False:
-    hist_df = pd.DataFrame(
-        columns=[
-            "id",
-            "datetime",
-            "amount",
-            "source",
-            "third_party_category",
-            "note",
-            "category",
-            "pattern",
-        ]
+if __name__ == "__main__":
+    categorization_container = CategorizationContainer()
+    categorization_container.config.root_data_folder_path.from_env(
+        "SPENDING_TRACKER_DATA_PATH", required=True
     )
-else:
-    hist_df = pd.read_csv(historical_categorized_csv_path, parse_dates=["datetime"])
+    categorization_container.config.from_yaml("./config.yml")
+    categorization_container.wire(modules=[__name__])
 
-# assert all patterns in historical file indeed do match text of that transaction
-hist_df.apply(
-    lambda row: make_sure_pattern_matches_text(row["pattern"], row["note"]), axis=1
-)
+    main()
+
+
+# %% -------- [] ----------:
+
+
+
+
+
+
+
+
 
 # store all possible categories and patterns in variable
 (

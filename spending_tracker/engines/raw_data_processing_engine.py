@@ -1,4 +1,5 @@
 import re
+from dependency_injector import providers
 import json
 import datetime
 from dateutil import parser
@@ -9,22 +10,24 @@ import dateutil
 import pandas as pd
 import hashlib
 import numpy as np
-
+from spending_tracker.models.paths import Paths
 
 class RawDataProcessingEngine:
-    def __init__(self, root_data_folder_path: str):
+
+    """This engine is for
+    1) Validating raw (downloaded) data integrity.
+    2) Processing raw files from various supported accounts (e.g. Chase, Amazon) into
+    files with a cleaned and unified format.
+    """
+
+    def __init__(self, root_data_folder_path: str, supported_accounts: list):
         self.root_data_folder_path = root_data_folder_path
         self.raw_data_folder_path = self.root_data_folder_path + "raw/"
         self.raw_data_file_names = self.read_raw_data_file_names()
         self.cleaned_data_folder_path = self.root_data_folder_path + "cleaned/"
-        self.historical_transactions_file_path = (
-            self.root_data_folder_path + "history.csv"
-        )
-        with open(self.root_data_folder_path + "config.json") as f:
-            self.config = json.load(f)
-        self.validate_data_folder_structure()
+        self.supported_accounts = supported_accounts
 
-    def read_raw_data_file_names(self):
+    def read_raw_data_file_names(self) -> None:
         raw_data_file_names = [
             f
             for f in os.listdir(self.raw_data_folder_path)
@@ -35,28 +38,23 @@ class RawDataProcessingEngine:
         ]
         return raw_data_file_names
 
-    def validate_data_folder_structure(self):
-        # TODO
-        pass
-
     @staticmethod
-    def contains_date_range(file_name):
+    def contains_date_range(file_name) -> bool:
         match_ = re.search(r"^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}", file_name)
         if match_ == None:
             return False
         return True
 
-    def verify_raw_data_file_names_contain_date_and_valid_account_name(self):
-        accounts = self.config["accounts"]
+    def verify_raw_data_file_names_contain_date_and_valid_account_name(self) -> None:
         for raw_data_file_name in raw_data_file_names:
             found_account = False
-            for account in accounts:
+            for account in self.supported_accounts:
                 if account in raw_data_file_name:
                     found_account = True
             if not found_account:
                 # make sure all raw_data_file_names have a valid account name
                 raise ValueError(
-                    f"File {raw_data_file_name} does not match any existing account name {accounts}"
+                    f"File {raw_data_file_name} does not match any existing account name {self.supported_accounts}"
                 )
             if not self.contains_date_range(raw_data_file_name):
                 # make sure all raw_data_file_names have date range
@@ -66,8 +64,8 @@ class RawDataProcessingEngine:
 
     @staticmethod
     def verify_raw_data_file_name_contains_proper_date_ranges_for_each_account(
-        account_raw_data_file_names
-    ):
+        account_raw_data_file_names,
+    ) -> None:
         # first verify that to date > from date
         for i in range(len(account_raw_data_file_names)):
             from_date = parser.parse(
@@ -101,8 +99,8 @@ class RawDataProcessingEngine:
                     f"Error: Found gaps/overlaps in date range for  {account_raw_data_file_names[i], account_raw_data_file_names[i+1]}"
                 )
 
-    def verify_raw_data_file_names_contain_proper_date_ranges_for_each_account(self):
-        for account in self.config["accounts"]:
+    def verify_raw_data_file_names_contain_proper_date_ranges_for_each_account(self) -> None:
+        for account in self.supported_accounts:
             account_raw_data_file_names = [
                 f for f in self.raw_data_file_names if account in f
             ]
@@ -113,7 +111,7 @@ class RawDataProcessingEngine:
                 account_raw_data_file_names
             )
 
-    def format_raw_data_file_names(self):
+    def format_raw_data_file_names(self) -> None:
         for raw_data_file_name in self.raw_data_file_names:
             raw_data_file_path = self.raw_data_folder_path + raw_data_file_name
             formatted_raw_data_file_name = (
@@ -129,13 +127,13 @@ class RawDataProcessingEngine:
         self.raw_data_file_names = self.read_raw_data_file_names()
 
     @staticmethod
-    def remove_non_numerical_chars(s):
+    def remove_non_numerical_chars(s) -> float:
         chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         l = list(s)
         l = [c for c in l if c in chars]
         return float("".join(l))
 
-    def clean_raw_data_files(self):
+    def clean_raw_data_files(self) -> None:
         for raw_data_file_name in self.raw_data_file_names:
             raw_data_file_path = self.raw_data_folder_path + raw_data_file_name
             self.detect_file_source(raw_data_file_path)(

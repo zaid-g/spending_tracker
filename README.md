@@ -2,13 +2,13 @@
 
 # Python Spending Tracker for US Accounts
 
-Fast command line tool for tracking expenses and providing basic analytics with an emphasis on extensibility, usability, future proof-ness, and low-level user control.
+Python application for tracking expenses and providing analytics with an emphasis on extensibility, usability, future proof-ness, and user control.
 
-I wrote this script because I was tired of buggy expense tracker applications like Mint and their limitations, such as:
+I wrote this application because I was tired of buggy expense tracker applications like Mint and their limitations, such as:
 - Unable to map and categorize individual expenses sourced in outside accounts (e.g. Amazon, Venmo). For example, amazon purchases just appear as "AMZN MKTP XXXX-XXXXX-XXXX" on your Credit Card. Was that purchase Electronics/Clothing/Groceries? Who knows...
 - Unable to use user-created Regular Expressions to auto-categorize transactions.
 - Unable to create arbitrary categorization layers e.g. categories, sub-categories, sub-sub-categories.
-- Sharing all financial data with a cloud provider who may sell your data.
+- Sharing finances with cloud provider who may not respect your privacy.
 
 
 # Supported Account Types
