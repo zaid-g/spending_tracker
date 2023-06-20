@@ -1,5 +1,6 @@
 import re
 from dependency_injector import providers
+from spending_tracker.engines.data_validation_engine import DataValidationEngine
 import json
 import datetime
 from dateutil import parser
@@ -10,7 +11,7 @@ import dateutil
 import pandas as pd
 import hashlib
 import numpy as np
-from spending_tracker.models.paths import Paths
+
 
 class RawDataProcessingEngine:
 
@@ -20,11 +21,17 @@ class RawDataProcessingEngine:
     files with a cleaned and unified format.
     """
 
-    def __init__(self, root_data_folder_path: str, supported_accounts: list):
+    def __init__(
+        self,
+        data_validation_engine: DataValidationEngine,
+        root_data_folder_path: str,
+        supported_accounts: list,
+    ):
         self.root_data_folder_path = root_data_folder_path
         self.raw_data_folder_path = self.root_data_folder_path + "raw/"
         self.raw_data_file_names = self.read_raw_data_file_names()
-        self.cleaned_data_folder_path = self.root_data_folder_path + "cleaned/"
+        self.format_raw_data_file_names()
+        self.processed_data_folder_path = self.root_data_folder_path + "processed/"
         self.supported_accounts = supported_accounts
 
     def read_raw_data_file_names(self) -> None:
@@ -37,79 +44,6 @@ class RawDataProcessingEngine:
             )  # TODO test
         ]
         return raw_data_file_names
-
-    @staticmethod
-    def contains_date_range(file_name) -> bool:
-        match_ = re.search(r"^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}", file_name)
-        if match_ == None:
-            return False
-        return True
-
-    def verify_raw_data_file_names_contain_date_and_valid_account_name(self) -> None:
-        for raw_data_file_name in raw_data_file_names:
-            found_account = False
-            for account in self.supported_accounts:
-                if account in raw_data_file_name:
-                    found_account = True
-            if not found_account:
-                # make sure all raw_data_file_names have a valid account name
-                raise ValueError(
-                    f"File {raw_data_file_name} does not match any existing account name {self.supported_accounts}"
-                )
-            if not self.contains_date_range(raw_data_file_name):
-                # make sure all raw_data_file_names have date range
-                raise ValueError(
-                    f"No date range detected in file {file}. Format is \n^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}"
-                )
-
-    @staticmethod
-    def verify_raw_data_file_name_contains_proper_date_ranges_for_each_account(
-        account_raw_data_file_names,
-    ) -> None:
-        # first verify that to date > from date
-        for i in range(len(account_raw_data_file_names)):
-            from_date = parser.parse(
-                account_raw_data_file_names[i][0:4]
-                + account_raw_data_file_names[i][5:7]
-                + account_raw_data_file_names[i][8:10]
-            )
-            to_date = parser.parse(
-                account_raw_data_file_names[i][14:18]
-                + account_raw_data_file_names[i][19:21]
-                + account_raw_data_file_names[i][22:24]
-            )
-            if to_date <= from_date:
-                raise ValueError(
-                    f"Error: Found file with from date greater than to date {account_raw_data_file_names[i]}"
-                )
-        # next verify no gaps/overlaps in date ranges
-        for i in range(len(account_raw_data_file_names) - 1):
-            from_date_next = parser.parse(
-                account_raw_data_file_names[i + 1][0:4]
-                + account_raw_data_file_names[i + 1][5:7]
-                + account_raw_data_file_names[i + 1][8:10]
-            )
-            to_date = parser.parse(
-                account_raw_data_file_names[i][14:18]
-                + account_raw_data_file_names[i][19:21]
-                + account_raw_data_file_names[i][22:24]
-            )
-            if not (from_date_next - to_date == datetime.timedelta(days=1)):
-                raise ValueError(
-                    f"Error: Found gaps/overlaps in date range for  {account_raw_data_file_names[i], account_raw_data_file_names[i+1]}"
-                )
-
-    def verify_raw_data_file_names_contain_proper_date_ranges_for_each_account(self) -> None:
-        for account in self.supported_accounts:
-            account_raw_data_file_names = [
-                f for f in self.raw_data_file_names if account in f
-            ]
-            account_raw_data_file_names.sort(
-                key=lambda f: int(f[0:4] + f[5:7] + f[8:10])
-            )
-            self.verify_raw_data_file_name_contains_proper_date_ranges_for_each_account(
-                account_raw_data_file_names
-            )
 
     def format_raw_data_file_names(self) -> None:
         for raw_data_file_name in self.raw_data_file_names:
@@ -133,7 +67,7 @@ class RawDataProcessingEngine:
         l = [c for c in l if c in chars]
         return float("".join(l))
 
-    def clean_raw_data_files(self) -> None:
+    def process_raw_data_files(self) -> None:
         for raw_data_file_name in self.raw_data_file_names:
             raw_data_file_path = self.raw_data_folder_path + raw_data_file_name
             self.detect_file_source(raw_data_file_path)(
@@ -183,7 +117,7 @@ class RawDataProcessingEngine:
             ],
             axis=1,
         )
-        df.to_csv(self.cleaned_data_folder_path + file_name, index=False)
+        df.to_csv(self.processed_data_folder_path + file_name, index=False)
         print("Cleaned one venmo file...")
 
     def amex(self, file_path, file_name):
@@ -210,7 +144,7 @@ class RawDataProcessingEngine:
             ],
             axis=1,
         )
-        df.to_csv(self.cleaned_data_folder_path + file_name, index=False)
+        df.to_csv(self.processed_data_folder_path + file_name, index=False)
         print("Cleaned one amex file...")
 
     def citi(self, file_path, file_name):
@@ -242,7 +176,7 @@ class RawDataProcessingEngine:
             ],
             axis=1,
         )
-        df.to_csv(self.cleaned_data_folder_path + file_name, index=False)
+        df.to_csv(self.processed_data_folder_path + file_name, index=False)
         print("Cleaned one citi file...")
 
     def amazon_refunds(self, file_path, file_name):
@@ -271,7 +205,7 @@ class RawDataProcessingEngine:
             ],
             axis=1,
         )
-        df.to_csv(self.cleaned_data_folder_path + file_name, index=False)
+        df.to_csv(self.processed_data_folder_path + file_name, index=False)
         print("Cleaned one amazon_refunds file...")
 
     def amazon_items(self, file_path, file_name):
@@ -297,7 +231,7 @@ class RawDataProcessingEngine:
             ],
             axis=1,
         )
-        df.to_csv(self.cleaned_data_folder_path + file_name, index=False)
+        df.to_csv(self.processed_data_folder_path + file_name, index=False)
         print("Cleaned one amazon_items file...")
 
     def chase_freedom(self, file_path, file_name):
@@ -324,7 +258,7 @@ class RawDataProcessingEngine:
             ],
             axis=1,
         )
-        df.to_csv(self.cleaned_data_folder_path + file_name, index=False)
+        df.to_csv(self.processed_data_folder_path + file_name, index=False)
         print("Cleaned one chase freedom file...")
 
     def chase_debit(self, file_path, file_name):
@@ -350,7 +284,7 @@ class RawDataProcessingEngine:
             ],
             axis=1,
         )
-        df.to_csv(self.cleaned_data_folder_path + file_name, index=False)
+        df.to_csv(self.processed_data_folder_path + file_name, index=False)
         print("Cleaned one chase debit file...")
 
     def detect_file_source(self, file_path):
