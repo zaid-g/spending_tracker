@@ -93,15 +93,15 @@ class DataValidationEngine:
                 account_raw_data_file_names
             )
 
-    def verify_no_duplicate_ids(self, df) -> None:
+    def verify_no_duplicate_ids(self, df: pd.DataFrame) -> None:
         if len(df) != len(df.id.value_counts()):
             raise ValueError(
-                f"Error: Found duplicate ID(s) in processed files:\n {df[df.id.isin(df.id.value_counts()[ df.id.value_counts() > 1 ].index)]}"
+                f"Error: Found duplicate ID(s):\n {df[df.id.isin(df.id.value_counts()[ df.id.value_counts() > 1 ].index)]}"
             )
 
     @staticmethod
     def verify_no_pattern_maps_to_more_than_one_category(
-        self, pattern_category_map_list
+        pattern_category_map_list
     ):
         patterns = sorted(
             list(set([pattern for pattern, _ in pattern_category_map_list]))
@@ -118,7 +118,8 @@ class DataValidationEngine:
                 len(mapped_categories) == 1
             ), f"Error: Found the same pattern **{pattern}** mapping to more than one category **{mapped_categories}**"
 
-    def verify_category_is_string_type(self, category):
+    @staticmethod
+    def verify_category_is_string_type(category) -> None:
         if pd.isna(category):
             return
         if type(category) != str:
@@ -129,9 +130,8 @@ class DataValidationEngine:
         text = text.lower()
         if pd.isna(pattern):
             return
-        assert (
-            re.compile(pattern).search(text) != None
-        ), f"Error: found pattern that doesn't match note (text). Pattern: {pattern} --- Text: {text}"
+        if re.compile(pattern).search(text) == None:
+            raise ValueError(f"Error: found pattern that doesn't match note (text). Pattern: {pattern} --- Text: {text}")
 
     def verify_all_historical_data_accounted_for_in_processed_data(
         self, hist_df, processed_df

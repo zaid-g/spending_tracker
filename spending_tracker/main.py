@@ -24,6 +24,7 @@ def main(
     ],
 ) -> None:
     raw_data_processing_engine.process_raw_data_files()
+    categorization_engine.run_categorization_TUI()
 
 
 if __name__ == "__main__":

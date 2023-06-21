@@ -28,13 +28,11 @@ class RawDataProcessingEngine:
         supported_accounts: list,
     ):
         self.root_data_folder_path = root_data_folder_path
-        self.raw_data_folder_path = self.root_data_folder_path + "raw/"
-        self.raw_data_file_names = self.read_raw_data_file_names()
-        self.format_raw_data_file_names()
-        self.processed_data_folder_path = self.root_data_folder_path + "processed/"
         self.supported_accounts = supported_accounts
+        self.raw_data_folder_path = self.root_data_folder_path + "raw/"
+        self.processed_data_folder_path = self.root_data_folder_path + "processed/"
 
-    def read_raw_data_file_names(self) -> None:
+    def read_raw_data_file_names(self) -> list:
         raw_data_file_names = [
             f
             for f in os.listdir(self.raw_data_folder_path)
@@ -46,7 +44,8 @@ class RawDataProcessingEngine:
         return raw_data_file_names
 
     def format_raw_data_file_names(self) -> None:
-        for raw_data_file_name in self.raw_data_file_names:
+        raw_data_file_names = self.read_raw_data_file_names()
+        for raw_data_file_name in raw_data_file_names:
             raw_data_file_path = self.raw_data_folder_path + raw_data_file_name
             formatted_raw_data_file_name = (
                 "".join(raw_data_file_name.split())
@@ -58,7 +57,14 @@ class RawDataProcessingEngine:
                 raw_data_file_path + formatted_raw_data_file_name
             )
             os.rename(raw_data_file_path, formatted_raw_data_file_path)
-        self.raw_data_file_names = self.read_raw_data_file_names()
+
+    def process_raw_data_files(self) -> None:
+        self.format_raw_data_file_names()
+        for raw_data_file_name in self.read_raw_data_file_names():
+            raw_data_file_path = self.raw_data_folder_path + raw_data_file_name
+            self.detect_file_source(raw_data_file_path)(
+                raw_data_file_path, raw_data_file_name
+            )
 
     @staticmethod
     def remove_non_numerical_chars(s) -> float:
@@ -66,13 +72,6 @@ class RawDataProcessingEngine:
         l = list(s)
         l = [c for c in l if c in chars]
         return float("".join(l))
-
-    def process_raw_data_files(self) -> None:
-        for raw_data_file_name in self.raw_data_file_names:
-            raw_data_file_path = self.raw_data_folder_path + raw_data_file_name
-            self.detect_file_source(raw_data_file_path)(
-                raw_data_file_path, raw_data_file_name
-            )
 
     def merge_debit_credit_columns(self, row):
         if np.isnan(row["Debit"]):
