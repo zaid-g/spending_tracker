@@ -10,6 +10,7 @@ class CategorizationContainer(containers.DeclarativeContainer):
 
     data_validation_engine = providers.Singleton(
         DataValidationEngine,
+        supported_accounts=config.supported_accounts,
     )
     raw_data_processing_engine = providers.Singleton(
         RawDataProcessingEngine,

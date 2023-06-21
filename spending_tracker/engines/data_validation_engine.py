@@ -13,7 +13,7 @@ import numpy as np
 
 
 class DataValidationEngine:
-    def __init__(self):
+    def __init__(self, supported_accounts: list):
         pass
 
     @staticmethod

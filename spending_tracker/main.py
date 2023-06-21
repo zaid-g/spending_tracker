@@ -32,7 +32,7 @@ if __name__ == "__main__":
     categorization_container.config.root_data_folder_path.from_env(
         "SPENDING_TRACKER_DATA_PATH", required=True
     )
-    categorization_container.config.from_yaml("./config.yml")
+    categorization_container.config.from_yaml("./spending_tracker/config.yml")
     categorization_container.wire(modules=[__name__])
 
     main()

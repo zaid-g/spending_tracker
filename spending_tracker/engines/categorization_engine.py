@@ -223,13 +223,15 @@ class CategorizationEngine:
                         last_transaction_index = transaction_index
                         print(f"\nLast transaction index: {transaction_index}")
                     transaction_index = input(
-                        "Select row you would like to categorize.\nEnter `s` to save and quit if this looks good.\nPress Enter to move to categorize next transaction.\nEnter `q` to quit without saving.\n"
+                        "Select row you would like to categorize.\nEnter `s` to save and quit if this looks good.\nPress Enter to move to categorize next transaction.\n"
                     )
                     if transaction_index == "":
                         if "last_transaction_index" in locals():
                             transaction_index = last_transaction_index + 1
                         else:
                             transaction_index = 0
+                    elif transaction_index == "s":
+                        transaction_index = -1
                     transaction_index = int(transaction_index)
                     if transaction_index >= 0:
                         self.data_to_categorize.loc[transaction_index]
@@ -237,15 +239,9 @@ class CategorizationEngine:
                 except KeyboardInterrupt:
                     exit()
                 except:
-                    print("Not an integer value or out of range...")
+                    print("Invalid input. Please try again.")
             if transaction_index == -1:
                 break
-            if transaction_index == -2:
-                ipdb.set_trace()
-                print("Exiting without saving")
-                break
-            if transaction_index == -3:
-                exit()
             print("\n      ***** Transaction Details ******         ")
             print(
                 self.data_to_categorize.loc[transaction_index][
@@ -266,41 +262,46 @@ class CategorizationEngine:
                     f'\n- This transaction is already categorized as **{self.data_to_categorize.loc[transaction_index, "category"]}** and matches pattern **{self.data_to_categorize.loc[transaction_index, "pattern"]}**'
                 )
             print("\n      ***** All Categories ******         ")
-            for i in range(len(all_categories)):
-                print(f"{i}: {all_categories[i]}")
+            for i in range(len(self.all_categories)):
+                print(f"{i}: {self.all_categories[i]}")
             inputted_category = input(
                 f"\nCategorize this transaction by typing in category or selecting index of pre-existing category (enter to skip):\n"
             )
             if inputted_category != "":
                 if inputted_category.isdigit():
-                    inputted_category = all_categories[int(inputted_category)]
-                    self.data_to_categorize.loc[transaction_index, "category"] = inputted_category
+                    inputted_category = self.all_categories[int(inputted_category)]
+                    self.data_to_categorize.loc[
+                        transaction_index, "category"
+                    ] = inputted_category
                 else:
                     inputted_category = inputted_category.strip("/").lower()
-                    self.data_to_categorize.loc[transaction_index, "category"] = inputted_category
+                    self.data_to_categorize.loc[
+                        transaction_index, "category"
+                    ] = inputted_category
                 while True:
                     print("\n      ***** All Patterns ******         \n")
-                    for i in range(len(all_patterns)):
-                        print(f"{i}: {all_patterns[i]}")
+                    for i in range(len(self.all_patterns)):
+                        print(f"{i}: {self.all_patterns[i]}")
                     inputted_pattern = input(
                         f"\nAdd a pattern for category **{inputted_category}** based on this transaction. Assume text is lower-cased. (enter to skip)\n\n{self.data_to_categorize.loc[transaction_index, 'note']}\n"
                     )
                     if inputted_pattern == "":
-                        if inputted_category not in all_categories:
-                            all_categories.append(inputted_category)
+                        if inputted_category not in self.all_categories:
+                            self.all_categories.append(inputted_category)
                         break
                     try:
                         if inputted_pattern.isdigit():
                             inputted_pattern = all_patterns[int(inputted_pattern)]
-                        verify_pattern_matches_text(
-                            inputted_pattern, self.data_to_categorize.loc[transaction_index, "note"]
+                        self.data_validation_engine.verify_pattern_matches_text(
+                            inputted_pattern,
+                            self.data_to_categorize.loc[transaction_index, "note"],
                         )
                         if (
                             inputted_pattern,
                             inputted_category,
-                        ) not in pattern_category_map_list:
+                        ) not in self.pattern_category_map_list:
                             pattern_category_map_list_copy = deepcopy(
-                                pattern_category_map_list
+                                self.pattern_category_map_list
                             )
                             pattern_category_map_list_copy.append(
                                 (inputted_pattern, inputted_category)
@@ -308,17 +309,19 @@ class CategorizationEngine:
                             verify_no_pattern_maps_to_more_than_one_category(
                                 pattern_category_map_list_copy
                             )
-                            pattern_category_map_list.append(
+                            self.pattern_category_map_list.append(
                                 (inputted_pattern, inputted_category)
                             )
-                            pattern_category_map_dict[
+                            self.pattern_category_map_dict[
                                 inputted_pattern
                             ] = inputted_category
-                            self.data_to_categorize.loc[transaction_index, "pattern"] = inputted_pattern
+                            self.data_to_categorize.loc[
+                                transaction_index, "pattern"
+                            ] = inputted_pattern
                             if inputted_category not in all_categories:
-                                all_categories.append(inputted_category)
+                                self.all_categories.append(inputted_category)
                             if inputted_pattern not in all_patterns:
-                                all_patterns.append(inputted_pattern)
+                                self.all_patterns.append(inputted_pattern)
                         break
                     except:
                         print("Error: inputted pattern does not match text (note)")
