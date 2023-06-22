@@ -9,8 +9,8 @@ import re
 class CategorizationEngine:
 
     """This engine is for
-    1) Loading historically categorized and new data
-    2) TODO
+    1) Loading historically categorized and new transactions
+    2) categorizing new and/or recategorizing old transactions
     """
 
     def __init__(
@@ -18,7 +18,7 @@ class CategorizationEngine:
     ):
         self.root_data_folder_path = root_data_folder_path
         self.processed_data_folder_path = self.root_data_folder_path + "processed/"
-        self.historical_categorized_data_file_path = (
+        self.historical_categorized_transactions_file_path = (
             self.root_data_folder_path + "history.csv"
         )
         (
@@ -29,9 +29,9 @@ class CategorizationEngine:
             self.all_patterns,
         ) = self.load_data_to_categorize()
 
-    def load_historical_categorized_data(self) -> pd.DataFrame:
-        if os.path.isfile(self.historical_categorized_data_file_path) is False:
-            historical_categorized_data = pd.DataFrame(
+    def load_historical_categorized_transactions(self) -> pd.DataFrame:
+        if os.path.isfile(self.historical_categorized_transactions_file_path) is False:
+            historical_categorized_transactions = pd.DataFrame(
                 columns=[
                     "id",
                     "datetime",
@@ -44,35 +44,38 @@ class CategorizationEngine:
                 ]
             )
         else:
-            historical_categorized_data = pd.read_csv(
-                self.historical_categorized_data_file_path, parse_dates=["datetime"]
+            historical_categorized_transactions = pd.read_csv(
+                self.historical_categorized_transactions_file_path,
+                parse_dates=["datetime"],
             )
         # make sure all categories are valid strings in historical file
-        historical_categorized_data["category"].apply(
+        historical_categorized_transactions["category"].apply(
             lambda category: self.data_validation_engine.verify_category_is_string_type(
                 category
             )
         )
         # make sure no duplicate ids (transactions) in historical data
-        self.data_validation_engine.verify_no_duplicate_ids(historical_categorized_data)
+        self.data_validation_engine.verify_no_duplicate_ids(
+            historical_categorized_transactions
+        )
         # make sure pattern matches note in historical data
-        historical_categorized_data.apply(
+        historical_categorized_transactions.apply(
             lambda row: self.data_validation_engine.verify_pattern_matches_text(
                 row["pattern"], row["note"]
             ),
             axis=1,
         )
-        return historical_categorized_data
+        return historical_categorized_transactions
 
-    def get_all_patterns_categories_from_historical_categorized_data(
-        self, historical_categorized_data
+    def get_all_patterns_categories_from_historical_categorized_transactions(
+        self, historical_categorized_transactions
     ):
         """returns tuple and dict objects"""
         pattern_category_map_list = list(
             set(
                 [
                     (row["pattern"], row["category"])
-                    for index, row in historical_categorized_data.iterrows()
+                    for index, row in historical_categorized_transactions.iterrows()
                     if not pd.isna(row["pattern"])
                 ]
             )
@@ -80,11 +83,13 @@ class CategorizationEngine:
         pattern_category_map_dict = dict(pattern_category_map_list)
         all_categories = [
             i
-            for i in historical_categorized_data["category"].unique()
+            for i in historical_categorized_transactions["category"].unique()
             if not pd.isna(i)
         ]
         all_patterns = [
-            i for i in historical_categorized_data["pattern"].unique() if not pd.isna(i)
+            i
+            for i in historical_categorized_transactions["pattern"].unique()
+            if not pd.isna(i)
         ]
         # make sure no pattern maps to more than one category
         self.data_validation_engine.verify_no_pattern_maps_to_more_than_one_category(
@@ -117,16 +122,6 @@ class CategorizationEngine:
         self.categorize_processed_data_using_historical_patterns()
         # make sure no duplicate ids in processed data
         self.data_validation_engine.verify_no_duplicate_ids(processed_data)
-        # make sure correct columns in processed data
-        if set(processed_data.columns) != {
-            "id",
-            "datetime",
-            "amount",
-            "source",
-            "third_party_category",
-            "note",
-        }:
-            raise ValueError(f"processed data files invalid columns")
         return processed_data
 
     def categorize_processed_data_using_historical_patterns(processed_data) -> None:
@@ -159,30 +154,32 @@ class CategorizationEngine:
 
     def load_data_to_categorize(self) -> tuple:
         # load historically categorized data
-        historical_categorized_data = self.load_historical_categorized_data()
+        historical_categorized_transactions = (
+            self.load_historical_categorized_transactions()
+        )
         # get mapped patterns & categories from historically categorized data
         (
             pattern_category_map_list,
             pattern_category_map_dict,
             all_categories,
             all_patterns,
-        ) = self.get_all_patterns_categories_from_historical_categorized_data(
-            historical_categorized_data
+        ) = self.get_all_patterns_categories_from_historical_categorized_transactions(
+            historical_categorized_transactions
         )
         # load processed data
-        processed_data = self.load_processed_data(historical_categorized_data.id)
+        processed_data = self.load_processed_data()
         # make sure no missing rows from processed data
-        self.data_validation_engine.verify_all_historical_data_accounted_for_in_processed_data(
-            historical_categorized_data, processed_data
+        self.data_validation_engine.verify_all_historical_categorized_transactions_accounted_for_in_processed_data(
+            historical_categorized_transactions, processed_data
         )
         # discard processed data that was already historically categorized
         # and keep new uncategorized processed data that we want to categorize
         uncategorized_processed_data = processed_data[
-            ~processed_data.id.isin(self.historical_categorized_data.id.values)
+            ~processed_data.id.isin(self.historical_categorized_transactions.id.values)
         ].sort_values(["datetime", "note"], ascending=False, ignore_index=True)
         # concatenate new uncategorized processed data with historical categorized data
         data_to_categorize = pd.concat(
-            [uncategorized_processed_data, historical_categorized_data],
+            [uncategorized_processed_data, historical_categorized_transactions],
             axis=0,
             ignore_index=True,
         )

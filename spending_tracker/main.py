@@ -22,17 +22,21 @@ def main(
     categorization_engine: CategorizationEngine = Provide[
         CategorizationContainer.categorization_engine
     ],
+    analytics_engine: AnalyticsEngine = Provide[
+        CategorizationContainer.analytics_engine
+    ],
 ) -> None:
     raw_data_processing_engine.process_raw_data_files()
     categorization_engine.run_categorization_TUI()
+    analytics_engine.analyze_categorized_data()
 
 
 if __name__ == "__main__":
-    categorization_container = CategorizationContainer()
-    categorization_container.config.root_data_folder_path.from_env(
+    container = CategorizationContainer()
+    container.config.root_data_folder_path.from_env(
         "SPENDING_TRACKER_DATA_PATH", required=True
     )
-    categorization_container.config.from_yaml("./spending_tracker/config.yml")
-    categorization_container.wire(modules=[__name__])
+    container.config.from_yaml("./spending_tracker/config.yml")
+    container.wire(modules=[__name__])
 
     main()

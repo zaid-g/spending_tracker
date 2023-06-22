@@ -1,42 +1,42 @@
 import os
+import json
 import sys
 import pandas as pd
 
 
-data_fol_path = sys.argv[1] + "/"
-historical_categorized_csv_path = data_fol_path + "history.csv"
+class AnalyticsEngine:
+    def __init__(
+        self, root_data_folder_path: str, data_validation_engine: DataValidationEngine
+    ):
+        self.root_data_folder_path = root_data_folder_path
+        self.categorized_transactions_file_path = (
+            self.root_data_folder_path + "categorized_transactions.csv"
+        )
+        self.data_validation_engine = data_validation_engine
+        self.categorized_transactions = self.load_categorized_transactions()
 
-if os.path.isfile(historical_categorized_csv_path) is False:
-    exit("No history file found")
-df = pd.read_csv(historical_categorized_csv_path, parse_dates=["datetime"])
-amount_by_category = df.groupby(by=["category"])["amount"].sum()
+    def load_categorized_transactions(self) -> pd.DataFrame:
+        categorized_transactions = pd.read_csv(
+            self.categorized_transactions_file_path, parse_dates=["datetime"]
+        )
+        if categorized_transactions["category"].isna().any():
+            print(
+                f"\n\nWarning: uncategorized transactions: {categorized_transactions[categorized_transactions['category'].isna()]}"
+            )
+        self.data_validation_engine.verify_spend_amount_for_mapped_categories(
+            categorized_transactions
+        )
 
-print(f"\n\nTotal by category: {amount_by_category.sort_values(ascending=False)}")
+    def analyze_categorized_transactions(self, categorized_transactions) -> tuple:
+        self.data_validation_engine.verify_spend_amount_for_mapped_categories(
+            categorized_transactions
+        )
+        spend_amount_by_category = (
+            categorized_transactions.groupby(by=["category"])["amount"]
+            .sum()
+            .sort_values(ascending=False)
+        )
+        return {"spend_amount_by_category": spend_amount_by_category}
 
-
-# ---------- [uncategorized transactions warning] ----------:
-
-if df["category"].isna().any():
-    print(f"\n\nWarning: uncategorized transactions: {df[df['category'].isna()]}")
-
-# ---------- [mapped sanity checks] ----------:
-
-# amazon
-mapped_amazon_total = amount_by_category["mapped/amazon"]
-amazon_total = sum(
-    df[(df["source"] == "amazon_items") | (df["source"] == "amazon_refunds")].amount
-)
-print(
-    f"\n\nCategory 'mapped/amazon' total = {mapped_amazon_total}, total amazon payments = {amazon_total}"
-)
-
-# venmo
-mapped_venmo_total = amount_by_category["mapped/venmo"]
-venmo_total = sum(df[df["source"] == "venmo"].amount)
-print(
-    f"\n\nCategory 'mapped/venmo' total = {mapped_venmo_total}, total venmo payments = {venmo_total}"
-)
-
-import ipdb
-
-ipdb.set_trace()
+    def print_results(self, **kwargs) -> None:
+        print(f"\n\nTotal by category: {spend_amount_by_category}")

@@ -14,7 +14,7 @@ import numpy as np
 
 class DataValidationEngine:
     def __init__(self, supported_accounts: list):
-        pass
+        self.supported_accounts = supported_accounts
 
     @staticmethod
     def contains_date_range(file_name) -> bool:
@@ -93,16 +93,15 @@ class DataValidationEngine:
                 account_raw_data_file_names
             )
 
-    def verify_no_duplicate_ids(self, df: pd.DataFrame) -> None:
+    @staticmethod
+    def verify_no_duplicate_ids(df: pd.DataFrame) -> None:
         if len(df) != len(df.id.value_counts()):
             raise ValueError(
                 f"Error: Found duplicate ID(s):\n {df[df.id.isin(df.id.value_counts()[ df.id.value_counts() > 1 ].index)]}"
             )
 
     @staticmethod
-    def verify_no_pattern_maps_to_more_than_one_category(
-        pattern_category_map_list
-    ):
+    def verify_no_pattern_maps_to_more_than_one_category(pattern_category_map_list):
         patterns = sorted(
             list(set([pattern for pattern, _ in pattern_category_map_list]))
         )
@@ -126,17 +125,59 @@ class DataValidationEngine:
             raise ValueError("category must be string")
 
     @staticmethod
-    def verify_pattern_matches_text(self, pattern, text) -> None:
+    def verify_pattern_matches_text(pattern, text) -> None:
         text = text.lower()
         if pd.isna(pattern):
             return
         if re.compile(pattern).search(text) == None:
-            raise ValueError(f"Error: found pattern that doesn't match note (text). Pattern: {pattern} --- Text: {text}")
-
-    def verify_all_historical_data_accounted_for_in_processed_data(
-        self, hist_df, processed_df
-    ) -> None:
-        if not set(hist_df.id.values).issubset(df.id.values):
             raise ValueError(
-                "Error: not all historical transactions accounted for in processed or raw csvs"
+                f"Error: found pattern that doesn't match note (text). Pattern: {pattern} --- Text: {text}"
             )
+
+    @staticmethod
+    def verify_all_historical_categorized_transactions_accounted_for_in_processed_data(
+        historical_categorized_transactions, processed_data
+    ) -> None:
+        if not set(historical_categorized_transactions.id.values).issubset(
+            processed_data.id.values
+        ):
+            raise ValueError(
+                "Error: not all categorized transactions accounted for in processed data folder"
+            )
+
+    @staticmethod
+    def verify_processed_data_columns(processed_data) -> None:
+        if set(processed_data.columns) != {
+            "id",
+            "datetime",
+            "amount",
+            "source",
+            "third_party_category",
+            "note",
+        }:
+            raise ValueError(f"processed data files invalid columns")
+
+    @staticmethod
+    def verify_spend_amount_for_mapped_categories(
+        spend_amount_by_category: pd.DataFrame,
+    ) -> None:
+        # TODO: DOCUMENT and understand and mby use regex because others might not have
+        # the same categories. also write in readme
+
+        # amazon
+        mapped_amazon_total = spend_amount_by_category["mapped/amazon"]
+        amazon_total = sum(
+            df[
+                (df["source"] == "amazon_items") | (df["source"] == "amazon_refunds")
+            ].amount
+        )
+        print(
+            f"\n\nCategory 'mapped/amazon' total = {mapped_amazon_total}, total amazon payments = {amazon_total}"
+        )
+
+        # venmo
+        mapped_venmo_total = spend_amount_by_category["mapped/venmo"]
+        venmo_total = sum(df[df["source"] == "venmo"].amount)
+        print(
+            f"\n\nCategory 'mapped/venmo' total = {mapped_venmo_total}, total venmo payments = {venmo_total}"
+        )
