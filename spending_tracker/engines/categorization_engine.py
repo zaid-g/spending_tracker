@@ -14,20 +14,14 @@ class CategorizationEngine:
     """
 
     def __init__(
-        self, data_validation_engine: DataValidationEngine, root_data_folder_path: str
+        self, root_data_folder_path: str, data_validation_engine: DataValidationEngine
     ):
         self.root_data_folder_path = root_data_folder_path
         self.processed_data_folder_path = self.root_data_folder_path + "processed/"
+        self.data_validation_engine = data_validation_engine
         self.historical_categorized_transactions_file_path = (
-            self.root_data_folder_path + "history.csv"
+            self.root_data_folder_path + "categorized_transactions.csv"
         )
-        (
-            self.data_to_categorize,
-            self.pattern_category_map_list,
-            self.pattern_category_map_dict,
-            self.all_categories,
-            self.all_patterns,
-        ) = self.load_data_to_categorize()
 
     def load_historical_categorized_transactions(self) -> pd.DataFrame:
         if os.path.isfile(self.historical_categorized_transactions_file_path) is False:
@@ -102,7 +96,9 @@ class CategorizationEngine:
             all_patterns,
         )
 
-    def load_processed_data(self) -> pd.DataFrame:
+    def load_processed_data(
+        self,
+    ) -> pd.DataFrame:
         # get processed data file names
         processed_data_file_paths = glob.glob(
             os.path.join(self.processed_data_folder_path, "*.csv")
@@ -118,21 +114,21 @@ class CategorizationEngine:
             )
             df_list.append(df)
         processed_data = pd.concat(df_list, axis=0, ignore_index=True)
-        # categorize processed data using historically created patterns
-        self.categorize_processed_data_using_historical_patterns()
         # make sure no duplicate ids in processed data
         self.data_validation_engine.verify_no_duplicate_ids(processed_data)
         return processed_data
 
-    def categorize_processed_data_using_historical_patterns(processed_data) -> None:
+    def categorize_processed_data_using_historical_patterns(
+        self, processed_data, pattern_category_map_list, pattern_category_map_dict
+    ) -> None:
         processed_data.loc[:, "pattern"] = processed_data["note"].apply(
             lambda text: self.get_longest_pattern_that_matches_text(
-                text, self.pattern_category_map_list
+                text, pattern_category_map_list
             )
         )
         processed_data.loc[:, "category"] = processed_data["pattern"].apply(
             lambda pattern: self.get_category_from_pattern(
-                pattern, self.pattern_category_map_dict
+                pattern, pattern_category_map_dict
             )
         )
 
@@ -152,46 +148,49 @@ class CategorizationEngine:
         else:
             return pattern_category_map_dict[pattern]
 
-    def load_data_to_categorize(self) -> tuple:
+    def load_data_to_categorize(self) -> None:
+        """Loads and sets as class attributes the transactions to categorize by user,
+        and the previously created user patterns for auto categorization using regex"""
         # load historically categorized data
         historical_categorized_transactions = (
             self.load_historical_categorized_transactions()
         )
         # get mapped patterns & categories from historically categorized data
         (
-            pattern_category_map_list,
-            pattern_category_map_dict,
-            all_categories,
-            all_patterns,
+            self.pattern_category_map_list,
+            self.pattern_category_map_dict,
+            self.all_categories,
+            self.all_patterns,
         ) = self.get_all_patterns_categories_from_historical_categorized_transactions(
             historical_categorized_transactions
         )
         # load processed data
         processed_data = self.load_processed_data()
+        # categorize processed data using historically created patterns
+        self.categorize_processed_data_using_historical_patterns(
+            processed_data, pattern_category_map_list, pattern_category_map_dict
+        )
         # make sure no missing rows from processed data
         self.data_validation_engine.verify_all_historical_categorized_transactions_accounted_for_in_processed_data(
             historical_categorized_transactions, processed_data
         )
-        # discard processed data that was already historically categorized
-        # and keep new uncategorized processed data that we want to categorize
+        # discard processed data that was already historically categorized and
+        # keep new uncategorized processed data that user wants to categorize
         uncategorized_processed_data = processed_data[
-            ~processed_data.id.isin(self.historical_categorized_transactions.id.values)
+            ~processed_data.id.isin(historical_categorized_transactions.id.values)
         ].sort_values(["datetime", "note"], ascending=False, ignore_index=True)
         # concatenate new uncategorized processed data with historical categorized data
-        data_to_categorize = pd.concat(
+        self.transactions_to_categorize = pd.concat(
             [uncategorized_processed_data, historical_categorized_transactions],
             axis=0,
             ignore_index=True,
         )
-        data_to_categorize.index = range(len(data_to_categorize) - 1, -1, -1)
+        self.transactions_to_categorize.index = range(
+            len(self.transactions_to_categorize) - 1, -1, -1
+        )
         # make sure no ids are duplicated
-        self.data_validation_engine.verify_no_duplicate_ids(data_to_categorize)
-        return (
-            data_to_categorize,
-            pattern_category_map_list,
-            pattern_category_map_dict,
-            all_categories,
-            all_patterns,
+        self.data_validation_engine.verify_no_duplicate_ids(
+            self.transactions_to_categorize
         )
 
     def run_categorization_TUI(self):
@@ -202,7 +201,7 @@ class CategorizationEngine:
             self.all_patterns.sort()
             print()
             print(
-                self.data_to_categorize[
+                self.transactions_to_categorize[
                     [
                         "note",
                         "category",
@@ -231,7 +230,7 @@ class CategorizationEngine:
                         transaction_index = -1
                     transaction_index = int(transaction_index)
                     if transaction_index >= 0:
-                        self.data_to_categorize.loc[transaction_index]
+                        self.transactions_to_categorize.loc[transaction_index]
                     break
                 except KeyboardInterrupt:
                     exit()
@@ -241,7 +240,7 @@ class CategorizationEngine:
                 break
             print("\n      ***** Transaction Details ******         ")
             print(
-                self.data_to_categorize.loc[transaction_index][
+                self.transactions_to_categorize.loc[transaction_index][
                     [
                         "datetime",
                         "amount",
@@ -253,10 +252,12 @@ class CategorizationEngine:
                 ]
             )
             print()
-            print(self.data_to_categorize.loc[transaction_index, "note"])
-            if pd.notna(self.data_to_categorize.loc[transaction_index, "category"]):
+            print(self.transactions_to_categorize.loc[transaction_index, "note"])
+            if pd.notna(
+                self.transactions_to_categorize.loc[transaction_index, "category"]
+            ):
                 print(
-                    f'\n- This transaction is already categorized as **{self.data_to_categorize.loc[transaction_index, "category"]}** and matches pattern **{self.data_to_categorize.loc[transaction_index, "pattern"]}**'
+                    f'\n- This transaction is already categorized as **{self.transactions_to_categorize.loc[transaction_index, "category"]}** and matches pattern **{self.transactions_to_categorize.loc[transaction_index, "pattern"]}**'
                 )
             print("\n      ***** All Categories ******         ")
             for i in range(len(self.all_categories)):
@@ -267,12 +268,12 @@ class CategorizationEngine:
             if inputted_category != "":
                 if inputted_category.isdigit():
                     inputted_category = self.all_categories[int(inputted_category)]
-                    self.data_to_categorize.loc[
+                    self.transactions_to_categorize.loc[
                         transaction_index, "category"
                     ] = inputted_category
                 else:
                     inputted_category = inputted_category.strip("/").lower()
-                    self.data_to_categorize.loc[
+                    self.transactions_to_categorize.loc[
                         transaction_index, "category"
                     ] = inputted_category
                 while True:
@@ -280,7 +281,7 @@ class CategorizationEngine:
                     for i in range(len(self.all_patterns)):
                         print(f"{i}: {self.all_patterns[i]}")
                     inputted_pattern = input(
-                        f"\nAdd a pattern for category **{inputted_category}** based on this transaction. Assume text is lower-cased. (enter to skip)\n\n{self.data_to_categorize.loc[transaction_index, 'note']}\n"
+                        f"\nAdd a pattern for category **{inputted_category}** based on this transaction. Assume text is lower-cased. (enter to skip)\n\n{self.transactions_to_categorize.loc[transaction_index, 'note']}\n"
                     )
                     if inputted_pattern == "":
                         if inputted_category not in self.all_categories:
@@ -291,7 +292,9 @@ class CategorizationEngine:
                             inputted_pattern = all_patterns[int(inputted_pattern)]
                         self.data_validation_engine.verify_pattern_matches_text(
                             inputted_pattern,
-                            self.data_to_categorize.loc[transaction_index, "note"],
+                            self.transactions_to_categorize.loc[
+                                transaction_index, "note"
+                            ],
                         )
                         if (
                             inputted_pattern,
@@ -312,7 +315,7 @@ class CategorizationEngine:
                             self.pattern_category_map_dict[
                                 inputted_pattern
                             ] = inputted_category
-                            self.data_to_categorize.loc[
+                            self.transactions_to_categorize.loc[
                                 transaction_index, "pattern"
                             ] = inputted_pattern
                             if inputted_category not in all_categories:

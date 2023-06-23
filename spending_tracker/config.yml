@@ -1,9 +1,97 @@
 supported_accounts:
-  - amazon_items_2022
-  - amazon_refunds_2022
-  - citi_double_cash
-  - citi_custom_cash
-  - chase_freedom
-  - chase_debit
-  - amex_bluecash_preferred
-  - venmo
+  # Here are the supported source accounts (lowercase only) and their respective 
+  # columns (of their downloaded csv's based on the default download
+  # method). If the financial company changes the format of the
+  # downloaded raw transaction files a new item is added here to
+  # for that format (appended with the year of when that 
+  # change occured).
+  amazon_items_2022:
+    - Order Date
+    - Order ID
+    - Title
+    - Category
+    - ASIN/ISBN
+    - UNSPSC Code
+    - Website
+    - Release Date
+    - Condition
+    - Seller
+    - Seller Credentials
+    - List Price Per Unit
+    - Purchase Price Per Unit
+    - Quantity
+    - Payment Instrument Type
+    - Purchase Order Number
+    - PO Line Number
+    - Ordering Customer Email
+    - Shipment Date
+    - Shipping Address Name
+    - Shipping Address Street 1
+    - Shipping Address Street 2
+    - Shipping Address City
+    - Shipping Address State
+    - Shipping Address Zip
+    - Order Status
+    - Carrier Name & Tracking Number
+    - Item Subtotal
+    - Item Subtotal Tax
+    - Item Total
+    - Tax Exemption Applied
+    - Tax Exemption Type
+    - Exemption Opt-Out
+    - Buyer Name
+    - Currency
+    - Group Name
+  amazon_refunds_2022:
+    - Order ID
+    - Order Date
+    - Title
+    - Category
+    - ASIN/ISBN
+    - Website
+    - Purchase Order Number
+    - Refund Date
+    - Refund Condition
+    - Refund Amount
+    - Refund Tax Amount
+    - Tax Exemption Applied
+    - Refund Reason
+    - Quantity
+    - Seller
+    - Seller Credentials
+    - Buyer Name
+    - Group Name
+  citi_double_cash_2022:
+    - Status
+    - Date
+    - Description
+    - Debit
+    - Credit
+  citi_custom_cash_2022:
+    - Status
+    - Date
+    - Description
+    - Debit
+    - Credit
+  chase_freedom_unlimited_2022:
+    - Transaction Date
+    - Post Date
+    - Description
+    - Category
+    - Type
+    - Amount
+    - Memo
+  chase_debit_2022:
+    - Details
+    - Posting Date
+    - Description
+    - Amount
+    - Type
+    - Balance
+    - Check or Slip #
+  american_express_blue_cash_preferred_2022:
+    - Date
+    - Description
+    - Card Member
+    - Account #
+    - Amount

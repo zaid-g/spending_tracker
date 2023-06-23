@@ -2,6 +2,7 @@ import os
 import json
 import sys
 import pandas as pd
+from spending_tracker.engines.data_validation_engine import DataValidationEngine
 
 
 class AnalyticsEngine:
@@ -13,10 +14,10 @@ class AnalyticsEngine:
             self.root_data_folder_path + "categorized_transactions.csv"
         )
         self.data_validation_engine = data_validation_engine
-        self.categorized_transactions = self.load_categorized_transactions()
 
-    def load_categorized_transactions(self) -> pd.DataFrame:
-        categorized_transactions = pd.read_csv(
+    def load_categorized_transactions(self) -> None:
+        """Loads categorized transactions and sets as a class attribute"""
+        self.categorized_transactions = pd.read_csv(
             self.categorized_transactions_file_path, parse_dates=["datetime"]
         )
         if categorized_transactions["category"].isna().any():
@@ -28,6 +29,7 @@ class AnalyticsEngine:
         )
 
     def analyze_categorized_transactions(self, categorized_transactions) -> tuple:
+        self.categorized_transactions = self.load_categorized_transactions()
         self.data_validation_engine.verify_spend_amount_for_mapped_categories(
             categorized_transactions
         )
