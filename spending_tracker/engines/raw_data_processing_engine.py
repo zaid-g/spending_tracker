@@ -50,57 +50,59 @@ class RawDataProcessingEngine:
             self.raw_data_file_names
         )
         for raw_data_file_name in self.read_raw_data_file_names():
+            account = self.detect_account_in_raw_data_file_name(raw_data_file_name)
             raw_data_file_path = self.raw_data_folder_path + raw_data_file_name
             raw_data = pd.read_csv(raw_data_file_path)
-            self.detect_file_source(raw_data_file_path)(
-                raw_data_file_path, raw_data_file_name
+            raw_data["account"] = account
+            # call function with the name of the account
+            processed_data = globals()[account](
+                raw_data, raw_data_file_path, raw_data_file_name
             )
+            processed_data.to_csv(
+                self.processed_data_folder_path + raw_data_file_name, index=False
+            )
+
+    def detect_account_in_raw_data_file_name(self, raw_data_file_name: str) -> str:
+        for account in self.supported_accounts:
+            if account in raw_data_file_name:
+                return account
 
     @staticmethod
     def remove_non_numerical_chars(s) -> float:
-        """This is to convert e.g. '$14.83' to '14,83'"""
+        """This is to convert e.g. '$14.83' to '14.83'"""
         chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         l = list(s)
         l = [c for c in l if c in chars]
         return float("".join(l))
 
-    def american_express_blue_cash_preferred(self, file_path, file_name):
-        source = "american_express_bluecash_preferred"
-        assert (
-            source in file_name
-        ), f"Error: source '{source}' is not in file name '{file_name}'"
-        df = pd.read_csv(
-            file_path,
-        )
-        df = df[["Date", "Amount", "Description"]]
-        df.columns = ["datetime", "amount", "note"]
-        df["source"] = source
-        df["third_party_category"] = None
-        df = df[["datetime", "amount", "source", "third_party_category", "note"]]
-        df["datetime"] = df["datetime"].apply(
+    def american_express_blue_cash_preferred_2022_1(
+        self, raw_data, raw_data_file_path, raw_data_file_name
+    ) -> pd.DataFrame:
+        raw_data = raw_data[["Date", "Amount", "Description"]]
+        raw_data.columns = ["datetime", "amount", "note"]
+        raw_data["third_party_category"] = None
+        raw_data = raw_data[
+            ["datetime", "amount", "source", "third_party_category", "note"]
+        ]
+        raw_data["datetime"] = raw_data["datetime"].apply(
             lambda datetime_string: dateutil.parser.parse(datetime_string)
         )
-        df["note"] = df["source"] + "_" + df["note"]
-        df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
-        df["id"] = df.apply(
+        raw_data["note"] = raw_data["source"] + "_" + raw_data["note"]
+        raw_data["note"] = raw_data["note"].apply(lambda s: s.replace(",", "."))
+        raw_data["id"] = raw_data.apply(
             lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[
                 0:30
             ],
             axis=1,
         )
-        df.to_csv(self.processed_data_folder_path + file_name, index=False)
-        print("Cleaned one american_express_bluecash_preferred file...")
+        return raw_data
 
-    def citi_double_cash_2022(self, file_path, file_name):
-        assert (
-            source in file_name
-        ), f"Error: source '{source}' is not in file name '{file_name}'"
-        df = pd.read_csv(
-            file_path,
-        )
-        if (sum(np.isnan(df.Credit.values)) + sum(np.isnan(df.Debit.values))) != len(
-            df
-        ):
+    def citi_double_cash_2022_1(
+        self, raw_data, raw_data_file_path, raw_data_file_name
+    ) -> pd.DataFrame:
+        if (
+            sum(np.isnan(raw_data.Credit.values)) + sum(np.isnan(raw_data.Debit.values))
+        ) != len(raw_data):
             raise Exception("Failed to parse debit/credit columns")
 
         def merge_debit_credit_columns(self, row):
@@ -109,132 +111,119 @@ class RawDataProcessingEngine:
             else:
                 return row["Debit"]
 
-        df["amount"] = df.apply(lambda row: merge_debit_credit_columns(row), axis=1)
-        df = df[["Date", "amount", "Description"]]
-        df.columns = ["datetime", "amount", "note"]
-        df["source"] = source
-        df["third_party_category"] = None
-        df = df[["datetime", "amount", "source", "third_party_category", "note"]]
-        df["datetime"] = df["datetime"].apply(
+        raw_data["amount"] = raw_data.apply(
+            lambda row: merge_debit_credit_columns(row), axis=1
+        )
+        raw_data = raw_data[["Date", "amount", "Description"]]
+        raw_data.columns = ["datetime", "amount", "note"]
+        raw_data["third_party_category"] = None
+        raw_data = raw_data[
+            ["datetime", "amount", "source", "third_party_category", "note"]
+        ]
+        raw_data["datetime"] = raw_data["datetime"].apply(
             lambda datetime_string: dateutil.parser.parse(datetime_string)
         )
-        df["note"] = df["source"] + "_" + df["note"]
-        df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
-        df["id"] = df.apply(
+        raw_data["note"] = raw_data["source"] + "_" + raw_data["note"]
+        raw_data["note"] = raw_data["note"].apply(lambda s: s.replace(",", "."))
+        raw_data["id"] = raw_data.apply(
             lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[
                 0:30
             ],
             axis=1,
         )
-        df.to_csv(self.processed_data_folder_path + file_name, index=False)
-        print("Cleaned one citi file...")
+        return raw_data
 
-    def citi_custom_cash_2022(self, file_path, file_name):
-        return self.citi_double_cash_2022(file_path, file_name)
+    def citi_custom_cash_2022_1(
+        self, raw_data, raw_data_file_path, raw_data_file_name
+    ) -> pd.DataFrame:
+        return self.citi_double_cash_2022(raw_data_file_path, raw_data_file_name)
 
-    def amazon_refunds_2022(self, file_path, file_name):
-        source = "amazon_refunds_2022"
-        assert (
-            source in file_name
-        ), f"Error: source '{source}' is not in file name '{file_name}'"
-        df = pd.read_csv(
-            file_path,
-        )
-        df["amount"] = df["Refund Amount"].apply(
+    def amazon_refunds_2022_1(
+        self, raw_data, raw_data_file_path, raw_data_file_name
+    ) -> pd.DataFrame:
+        raw_data["amount"] = raw_data["Refund Amount"].apply(
             lambda x: remove_non_numerical_chars(x)
-        ) + df["Refund Tax Amount"].apply(lambda x: remove_non_numerical_chars(x))
-        df["amount"] = df["amount"] * -1
-        df = df[["Order Date", "amount", "Category", "Title"]]
-        df.columns = ["datetime", "amount", "third_party_category", "note"]
-        df["source"] = source
-        df["datetime"] = df["datetime"].apply(
+        ) + raw_data["Refund Tax Amount"].apply(lambda x: remove_non_numerical_chars(x))
+        raw_data["amount"] = raw_data["amount"] * -1
+        raw_data = raw_data[["Order Date", "amount", "Category", "Title"]]
+        raw_data.columns = ["datetime", "amount", "third_party_category", "note"]
+        raw_data["datetime"] = raw_data["datetime"].apply(
             lambda datetime_string: dateutil.parser.parse(datetime_string)
         )
-        df["note"] = df["source"] + "_" + df["note"]
-        df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
-        df["id"] = df.apply(
+        raw_data["note"] = raw_data["source"] + "_" + raw_data["note"]
+        raw_data["note"] = raw_data["note"].apply(lambda s: s.replace(",", "."))
+        raw_data["id"] = raw_data.apply(
             lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[
                 0:30
             ],
             axis=1,
         )
-        df.to_csv(self.processed_data_folder_path + file_name, index=False)
-        print("Cleaned one amazon_refunds_2022 file...")
+        return raw_data
 
-    def amazon_items_2022(self, file_path, file_name):
-        source = "amazon_items_2022"
-        assert (
-            source in file_name
-        ), f"Error: source '{source}' is not in file name '{file_name}'"
-        df = pd.read_csv(
-            file_path,
-        )
-        df = df[["Order Date", "Item Total", "Category", "Title"]]
-        df.columns = ["datetime", "amount", "third_party_category", "note"]
-        df["source"] = source
-        df["datetime"] = df["datetime"].apply(
+    def amazon_items_2022_1(
+        self, raw_data, raw_data_file_path, raw_data_file_name
+    ) -> pd.DataFrame:
+        raw_data = raw_data[["Order Date", "Item Total", "Category", "Title"]]
+        raw_data.columns = ["datetime", "amount", "third_party_category", "note"]
+        raw_data["datetime"] = raw_data["datetime"].apply(
             lambda datetime_string: dateutil.parser.parse(datetime_string)
         )
-        df["amount"] = df["amount"].apply(lambda x: remove_non_numerical_chars(x))
-        df["note"] = df["source"] + "_" + df["note"]
-        df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
-        df["id"] = df.apply(
+        raw_data["amount"] = raw_data["amount"].apply(
+            lambda x: remove_non_numerical_chars(x)
+        )
+        raw_data["note"] = raw_data["source"] + "_" + raw_data["note"]
+        raw_data["note"] = raw_data["note"].apply(lambda s: s.replace(",", "."))
+        raw_data["id"] = raw_data.apply(
             lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[
                 0:30
             ],
             axis=1,
         )
-        df.to_csv(self.processed_data_folder_path + file_name, index=False)
-        print("Cleaned one amazon_items_2022 file...")
+        return raw_data
 
-    def chase_freedom_unlimited_2022(self, file_path, file_name):
-        source = "chase_freedom_unlimited"
-        assert (
-            source in file_name
-        ), f"Error: source '{source}' is not in file name '{file_name}'"
-        df = pd.read_csv(file_path, index_col=False)
+    def chase_freedom_unlimited_2022_1(
+        self, raw_data, raw_data_file_path, raw_data_file_name
+    ) -> pd.DataFrame:
         # Make sure to get Post date not transaction date, that's what website
         # search tool uses to filter/search
-        df = df[["Post Date", "Description", "Category", "Amount"]]
-        df.columns = ["datetime", "note", "third_party_category", "amount"]
-        df["amount"] = df["amount"].apply(lambda x: -x)
-        df["source"] = source
-        df = df[["datetime", "amount", "source", "third_party_category", "note"]]
-        df["datetime"] = df["datetime"].apply(
+        raw_data = raw_data[["Post Date", "Description", "Category", "Amount"]]
+        raw_data.columns = ["datetime", "note", "third_party_category", "amount"]
+        raw_data["amount"] = raw_data["amount"].apply(lambda x: -x)
+        raw_data = raw_data[
+            ["datetime", "amount", "source", "third_party_category", "note"]
+        ]
+        raw_data["datetime"] = raw_data["datetime"].apply(
             lambda datetime_string: dateutil.parser.parse(datetime_string)
         )
-        df["note"] = df["source"] + "_" + df["note"]
-        df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
-        df["id"] = df.apply(
+        raw_data["note"] = raw_data["source"] + "_" + raw_data["note"]
+        raw_data["note"] = raw_data["note"].apply(lambda s: s.replace(",", "."))
+        raw_data["id"] = raw_data.apply(
             lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[
                 0:30
             ],
             axis=1,
         )
-        df.to_csv(self.processed_data_folder_path + file_name, index=False)
-        print("Cleaned one chase freedom file...")
+        return raw_data
 
-    def chase_debit_2022(self, file_path, file_name):
-        assert (
-            source in file_name
-        ), f"Error: source '{source}' is not in file name '{file_name}'"
-        df = pd.read_csv(file_path, index_col=False)
-        df = df[["Posting Date", "Amount", "Description"]]
-        df.columns = ["datetime", "amount", "note"]
-        df["amount"] = df["amount"].apply(lambda x: -x)
-        df["source"] = source
-        df["third_party_category"] = None
-        df = df[["datetime", "amount", "source", "third_party_category", "note"]]
-        df["datetime"] = df["datetime"].apply(
+    def chase_debit_2022_1(
+        self, raw_data, raw_data_file_path, raw_data_file_name
+    ) -> pd.DataFrame:
+        raw_data = raw_data[["Posting Date", "Amount", "Description"]]
+        raw_data.columns = ["datetime", "amount", "note"]
+        raw_data["amount"] = raw_data["amount"].apply(lambda x: -x)
+        raw_data["third_party_category"] = None
+        raw_data = raw_data[
+            ["datetime", "amount", "source", "third_party_category", "note"]
+        ]
+        raw_data["datetime"] = raw_data["datetime"].apply(
             lambda datetime_string: dateutil.parser.parse(datetime_string)
         )
-        df["note"] = df["source"] + "_" + df["note"]
-        df["note"] = df["note"].apply(lambda s: s.replace(",", "."))
-        df["id"] = df.apply(
+        raw_data["note"] = raw_data["source"] + "_" + raw_data["note"]
+        raw_data["note"] = raw_data["note"].apply(lambda s: s.replace(",", "."))
+        raw_data["id"] = raw_data.apply(
             lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[
                 0:30
             ],
             axis=1,
         )
-        df.to_csv(self.processed_data_folder_path + file_name, index=False)
-        print("Cleaned one chase debit file...")
+        return raw_data

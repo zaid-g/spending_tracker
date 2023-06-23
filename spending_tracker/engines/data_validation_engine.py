@@ -33,6 +33,9 @@ class DataValidationEngine:
                     f"{raw_data_file_name} contains multiple accounts. Please fix name to contain only one of the supported accounts {[acc for acc in self.supported_accounts]}"
                 )
 
+    def verify_raw_data_files_contain_correct_columns(self):
+        pass
+
     def verify_raw_data_file_names_contain_proper_date_ranges_for_each_account(
         self, raw_data_file_names
     ) -> None:
@@ -162,7 +165,7 @@ class DataValidationEngine:
             "id",
             "datetime",
             "amount",
-            "source",
+            "account",
             "third_party_category",
             "note",
         }:

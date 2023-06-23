@@ -1,3 +1,4 @@
+recommend git tracking history to avoid accidental loss of data.
 # Beta (basic functionality works but needs documentation on how to set up & support more account types).
 
 # Python Spending Tracker for US Accounts
