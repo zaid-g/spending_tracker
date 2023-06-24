@@ -162,4 +162,3 @@ cython_debug/
 # vim
 .vim
 .ccls*
-data
