@@ -16,6 +16,26 @@ class DataValidationEngine:
     def __init__(self, supported_accounts: dict):
         self.supported_accounts = supported_accounts
 
+    def verify_processed_data_bound_by_date_range(
+        self, processed_data_file_name, processed_data
+    ):
+        from_date = parser.parse(
+            processed_data_file_name[0:4]
+            + processed_data_file_name[5:7]
+            + processed_data_file_name[8:10]
+        )
+        to_date = parser.parse(
+            processed_data_file_name[14:18]
+            + processed_data_file_name[19:21]
+            + processed_data_file_name[22:24]
+        )
+        if any((processed_data["datetime"] < from_date)) or any(
+            (processed_data["datetime"] > to_date)
+        ):
+            raise ValueError(
+                f"Out of bound transaction in processed data {processed_data_file_name}. Please check date range of raw file/transactions."
+            )
+
     def verify_raw_data_file_names_contain_only_single_account(
         self, raw_data_file_names
     ) -> None:
@@ -24,17 +44,22 @@ class DataValidationEngine:
             for supported_account in self.supported_accounts:
                 if supported_account in raw_data_file_name.lower():
                     num_accounts_in_name += 1
-            if num_accounts_in_name != 0:
+            if num_accounts_in_name == 0:
                 raise ValueError(
-                    f"{raw_data_file_name} does not contain any supported account. Cannot identify file"
+                    f"{raw_data_file_name} does not contain any supported account: {[acc for acc in self.supported_accounts]}.\n Cannot identify file"
                 )
             elif num_accounts_in_name > 1:
                 raise ValueError(
                     f"{raw_data_file_name} contains multiple accounts. Please fix name to contain only one of the supported accounts {[acc for acc in self.supported_accounts]}"
                 )
 
-    def verify_raw_data_files_contain_correct_columns(self):
-        pass
+    def verify_raw_data_contains_correct_columns(
+        self, raw_data, raw_data_file_path, account
+    ):
+        if set(raw_data.columns) != set(self.supported_accounts[account]):
+            raise ValueError(
+                f"Invalid columns in {raw_data_file_path} based on account {account}.\nCheck config.yaml for more details. {raw_data.columns} != {self.supported_accounts[account]}"
+            )
 
     def verify_raw_data_file_names_contain_proper_date_ranges_for_each_account(
         self, raw_data_file_names
@@ -86,13 +111,14 @@ class DataValidationEngine:
                 + account_raw_data_file_names[i][19:21]
                 + account_raw_data_file_names[i][22:24]
             )
-            if not (from_date_next - to_date < datetime.timedelta(days=1)):
+            if (from_date_next - to_date) < datetime.timedelta(days=1):
                 raise ValueError(
                     f"Error: Found overlaps in date range for {account_raw_data_file_names[i], account_raw_data_file_names[i+1]}"
                 )
 
     def verify_raw_data_file_names_contain_date_range(
         self,
+        raw_data_file_names,
     ) -> None:
         for raw_data_file_name in raw_data_file_names:
             if not self.contains_date_range(raw_data_file_name):
@@ -127,9 +153,8 @@ class DataValidationEngine:
             for i in range(len(pattern_category_map_list)):
                 if pattern_category_map_list[i][0] == pattern:
                     mapped_categories.add(pattern_category_map_list[i][1])
-            assert (
-                len(mapped_categories) == 1
-            ), f"Error: Found the same pattern **{pattern}** mapping to more than one category **{mapped_categories}**"
+            if len(mapped_categories) != 1:
+                raise ValueError(f"Error: Found the same pattern **{pattern}** mapping to more than one category **{mapped_categories}**")
 
     @staticmethod
     def verify_category_is_string_type(category) -> None:
@@ -155,8 +180,20 @@ class DataValidationEngine:
         if not set(historical_categorized_transactions.id.values).issubset(
             processed_data.id.values
         ):
+            import ipdb
+
+            ipdb.set_trace()
+            missing_ids = set(historical_categorized_transactions.id.values) - set(
+                processed_data.id.values
+            )
+            missing_transactions = historical_categorized_transactions[
+                [historical_categorized_transactions.id.isin(missing_ids)]
+            ]
+            import ipdb
+
+            ipdb.set_trace()
             raise ValueError(
-                "Error: not all categorized transactions accounted for in processed data folder"
+                f"Error: not all categorized transactions accounted for in processed data folder:\n{missing_transactions}"
             )
 
     @staticmethod
@@ -172,11 +209,26 @@ class DataValidationEngine:
             raise ValueError(f"processed data files invalid columns")
 
     @staticmethod
+    def verify_categorized_transactions_columns(categorized_transactions) -> None:
+        if set(categorized_transactions.columns) != {
+            "id",
+            "datetime",
+            "amount",
+            "account",
+            "third_party_category",
+            "note",
+            "pattern",
+            "category",
+        }:
+            raise ValueError(f"Categorized data files invalid columns")
+
+    @staticmethod
     def verify_spend_amount_for_mapped_categories(
         spend_amount_by_category: pd.DataFrame,
     ) -> None:
         # TODO: DOCUMENT and understand and mby use regex because others might not have
         # the same categories. also write in readme
+        return
 
         # amazon
         mapped_amazon_total = spend_amount_by_category["mapped/amazon"]

@@ -92,10 +92,10 @@ supported_accounts:
     - Amount
     - Type
     - Balance
-    - Check or Slip #
+    - "Check or Slip #"
   american_express_blue_cash_preferred_2022_1:
     - Date
     - Description
     - Card Member
-    - Account #
+    - "Account #"
     - Amount

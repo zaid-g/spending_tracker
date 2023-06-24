@@ -20,21 +20,20 @@ class AnalyticsEngine:
         self.categorized_transactions = pd.read_csv(
             self.categorized_transactions_file_path, parse_dates=["datetime"]
         )
-        if categorized_transactions["category"].isna().any():
+        if self.categorized_transactions["category"].isna().any():
             print(
-                f"\n\nWarning: uncategorized transactions: {categorized_transactions[categorized_transactions['category'].isna()]}"
+                f"\n\nWarning: uncategorized transactions: {self.categorized_transactions[self.categorized_transactions['category'].isna()]}"
             )
         self.data_validation_engine.verify_spend_amount_for_mapped_categories(
-            categorized_transactions
+            self.categorized_transactions
         )
 
-    def analyze_categorized_transactions(self, categorized_transactions) -> tuple:
-        self.categorized_transactions = self.load_categorized_transactions()
+    def analyze_categorized_transactions(self) -> tuple:
         self.data_validation_engine.verify_spend_amount_for_mapped_categories(
-            categorized_transactions
+            self.categorized_transactions
         )
         spend_amount_by_category = (
-            categorized_transactions.groupby(by=["category"])["amount"]
+            self.categorized_transactions.groupby(by=["category"])["amount"]
             .sum()
             .sort_values(ascending=False)
         )
