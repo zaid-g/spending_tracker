@@ -97,7 +97,7 @@ class DataValidationEngine:
             )
             if to_date <= from_date:
                 raise ValueError(
-                    f"Error: Found file with from date greater than to date {account_raw_data_file_names[i]}"
+                    f"Found file with from date greater than to date {account_raw_data_file_names[i]}"
                 )
         # next verify no overlaps in date ranges
         for i in range(len(account_raw_data_file_names) - 1):
@@ -113,7 +113,7 @@ class DataValidationEngine:
             )
             if (from_date_next - to_date) < datetime.timedelta(days=1):
                 raise ValueError(
-                    f"Error: Found overlaps in date range for {account_raw_data_file_names[i], account_raw_data_file_names[i+1]}"
+                    f"Found overlaps in date range for {account_raw_data_file_names[i], account_raw_data_file_names[i+1]}"
                 )
 
     def verify_raw_data_file_names_contain_date_range(
@@ -137,7 +137,7 @@ class DataValidationEngine:
     def verify_no_duplicate_ids(df: pd.DataFrame) -> None:
         if len(df) != len(df.id.value_counts()):
             raise ValueError(
-                f"Error: Found duplicate ID(s):\n {df[df.id.isin(df.id.value_counts()[ df.id.value_counts() > 1 ].index)]}"
+                f"Found duplicate ID(s):\n {df[df.id.isin(df.id.value_counts()[ df.id.value_counts() > 1 ].index)]}"
             )
 
     @staticmethod
@@ -154,24 +154,31 @@ class DataValidationEngine:
                 if pattern_category_map_list[i][0] == pattern:
                     mapped_categories.add(pattern_category_map_list[i][1])
             if len(mapped_categories) != 1:
-                raise ValueError(f"Error: Found the same pattern **{pattern}** mapping to more than one category **{mapped_categories}**")
+                raise ValueError(
+                    f"Found the same pattern **{pattern}** mapping to more than one category **{mapped_categories}**"
+                )
 
     @staticmethod
     def verify_category_is_string_type(category) -> None:
         if pd.isna(category):
             return
         if type(category) != str:
-            raise ValueError("category must be string")
+            raise ValueError("Category must be string")
 
     @staticmethod
-    def verify_pattern_matches_text(pattern, text) -> None:
+    def verify_pattern_matches_text(pattern, text, hide_text=False) -> None:
         text = text.lower()
         if pd.isna(pattern):
             return
         if re.compile(pattern).search(text) == None:
-            raise ValueError(
-                f"Error: found pattern that doesn't match note (text). Pattern: {pattern} --- Text: {text}"
-            )
+            if hide_text:
+                raise ValueError(
+                    f"Pattern doesn't match text."
+                )
+            else:
+                raise ValueError(
+                    f"Pattern doesn't match text. Pattern: {pattern} --- Text: {text}"
+                )
 
     @staticmethod
     def verify_all_historical_categorized_transactions_accounted_for_in_processed_data(
@@ -193,7 +200,7 @@ class DataValidationEngine:
 
             ipdb.set_trace()
             raise ValueError(
-                f"Error: not all categorized transactions accounted for in processed data folder:\n{missing_transactions}"
+                f"Not all categorized transactions accounted for in processed data folder:\n{missing_transactions}"
             )
 
     @staticmethod
@@ -206,7 +213,7 @@ class DataValidationEngine:
             "third_party_category",
             "note",
         }:
-            raise ValueError(f"processed data files invalid columns")
+            raise ValueError(f"Processed data files invalid columns")
 
     @staticmethod
     def verify_categorized_transactions_columns(categorized_transactions) -> None:

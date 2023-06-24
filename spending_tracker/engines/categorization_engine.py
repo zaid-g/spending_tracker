@@ -1,9 +1,12 @@
 import pandas as pd
+from copy import deepcopy
 from spending_tracker.engines.data_validation_engine import DataValidationEngine
 import glob
 import os
 import numpy as np
 import re
+
+# TODO need to add this to all get inputs AND test with empty raw dir and empty/filled history
 
 
 class CategorizationEngine:
@@ -202,64 +205,63 @@ class CategorizationEngine:
     def run_categorization_TUI(self):
         # time to ask user to confirm or override
         # sort categories and patterns for visual display
-        transaction_index = None
+        transaction_index = -1  # default value
         while True:
             # sort categories and patterns alphabetically
             self.all_categories.sort()
             self.all_patterns.sort()
             # print transactions to categorize in readable format
             self.print_transactions_to_categorize()
-            self.get_user_input_for_transaction_index(transaction_index)
-            if transaction_index == -1: # user selected Save and quit option
+            transaction_index = self.get_user_input_for_transaction_index(
+                transaction_index
+            )
+            if transaction_index == -1:  # user selected Save and quit option
                 self.save_categorized_transactions(self.transactions_to_categorize)
                 break
-            # else user selected a transaction by its (dataframe) index 
-            transaction = self.transactions_to_categorize.loc[transaction_index]
-            self.print_transaction_details(transaction)
+            # else user selected a transaction by its (dataframe) index
+            self.print_transaction_details(
+                self.transactions_to_categorize.loc[transaction_index]
+            )
             self.print_all_categories()
             # prompt user for category
             inputted_category = self.get_user_input_for_category()
-            if inputted_category != "": # skip to start if user pressed Enter.
-                transaction["category"] = inputted_category
-                transaction["pattern"] = None # clear pattern if user overrides category
+            if inputted_category != "":  # skip to start if user pressed Enter.
+                self.transactions_to_categorize.loc[
+                    transaction_index, "category"
+                ] = inputted_category
+                self.transactions_to_categorize.loc[
+                    transaction_index, "pattern"
+                ] = None  # clear pattern if user overrides category
                 # set new category if doesn't exist
                 if inputted_category not in self.all_categories:
                     self.all_categories.append(inputted_category)
                 self.print_all_patterns()
-                inputted_pattern = self.get_user_input_for_pattern(transaction, inputted_category)
+                inputted_pattern = self.get_user_input_for_pattern(
+                    self.transactions_to_categorize.loc[transaction_index],
+                    inputted_category,
+                )
                 if inputted_pattern != "":  # skip to start if user pressed Enter.
-                    try:
-                        if (
-                            inputted_pattern,
-                            inputted_category,
-                        ) not in self.pattern_category_map_list: # if new pattern -> cat mapping
-                            pattern_category_map_list_copy = deepcopy(
-                                self.pattern_category_map_list
-                            )
-                            pattern_category_map_list_copy.append(
-                                (inputted_pattern, inputted_category)
-                            )
-                            self.data_validation_engine.verify_no_pattern_maps_to_more_than_one_category(
-                                pattern_category_map_list_copy
-                            )
-                            self.pattern_category_map_list.append(
-                                (inputted_pattern, inputted_category)
-                            )
-                            self.pattern_category_map_dict[
-                                inputted_pattern
-                            ] = inputted_category
-                            transaction["pattern"] = inputted_pattern
-                            if inputted_pattern not in self.all_patterns:
-                                self.all_patterns.append(inputted_pattern)
-                        break
-                    except ValueError as e:
-                        print(f"Error: {str(e)}")
+                    if (
+                        inputted_pattern,
+                        inputted_category,
+                    ) not in self.pattern_category_map_list:  # if new pattern -> cat mapping
+                        self.pattern_category_map_list.append(
+                            (inputted_pattern, inputted_category)
+                        )
+                        self.pattern_category_map_dict[
+                            inputted_pattern
+                        ] = inputted_category
+                        self.transactions_to_categorize.loc[
+                            transaction_index, "pattern"
+                        ] = inputted_pattern
+                        if inputted_pattern not in self.all_patterns:
+                            self.all_patterns.append(inputted_pattern)
 
     def get_user_input_for_transaction_index(self, last_transaction_index=-1) -> int:
         while True:
             try:
                 transaction_index = input(
-                    "Select row you would like to categorize.\nEnter `s` to save and quit if this looks good.\nPress Enter to move to categorize next transaction.\n"
+                    "\nSelect row you would like to categorize, enter `s` to save and quit if this looks good, or press Enter to move to categorize next transaction.\n"
                 )
                 if transaction_index == "":
                     transaction_index = last_transaction_index + 1
@@ -267,12 +269,15 @@ class CategorizationEngine:
                     transaction_index = -1
                 transaction_index = int(transaction_index)
                 if transaction_index >= 0:
-                    self.transactions_to_categorize.loc[transaction_index] # to catch if out of bounds
+                    self.transactions_to_categorize.loc[
+                        transaction_index
+                    ]  # to catch if out of bounds
                 break
-            except KeyboardInterrupt: #TODO need to add this to all get inputs AND test with empty raw dir and empty/filled history
+            except KeyboardInterrupt:
+                print("Exiting without saving")
                 exit()
-            except:
-                print("Invalid input. Please try again.")
+            except Exception as e:
+                print(f"\n❌❌❌❌Invalid input. Please try again. Error: {e}")
         return transaction_index
 
     def print_transactions_to_categorize(self):
@@ -308,9 +313,7 @@ class CategorizationEngine:
         )
         print()
         print(transaction["note"])
-        if pd.notna(
-            transaction["category"]
-        ):
+        if pd.notna(transaction["category"]):
             print(
                 f'\n- This transaction is already categorized as **{transaction["category"]}** with pattern: **{transaction["pattern"]}**'
             )
@@ -323,7 +326,7 @@ class CategorizationEngine:
     def print_all_patterns(self) -> None:
         print("\n      ***** All Patterns ******         \n")
         for i in range(len(self.all_patterns)):
-            print(f"{i}: {self.all_patterns[i]}")
+            print(f"{self.all_patterns[i]}")
 
     def get_user_input_for_category(self) -> str:
         while True:
@@ -331,37 +334,50 @@ class CategorizationEngine:
                 inputted_category = input(
                     f"\nCategorize this transaction by typing in category or selecting index of pre-existing category (enter to skip):\n"
                 )
-                if inputted_category.isdigit(): # if integer
+                if inputted_category.isdigit():  # if integer
                     inputted_category = self.all_categories[int(inputted_category)]
                 inputted_category = inputted_category.strip("/").lower()
                 break
             except KeyboardInterrupt:
+                print("Exiting without saving")
                 exit()
             except:
-                print("Invalid input. Please try again.")
+                print("\n❌❌❌❌Invalid input. Please try again.")
         return inputted_category
 
     def get_user_input_for_pattern(self, transaction, inputted_category) -> str:
         while True:
             try:
                 inputted_pattern = input(
-                    f"\nAdd a pattern for category **{inputted_category}** based on this transaction. Assume text is lower-cased. (enter to skip)\n\n{transaction['note']}\n"
+                    f"\nAdd a pattern for category **{inputted_category}** based on this transaction. Assume text is lower-cased. (enter to skip)\n\n{transaction['note']}\n\n"
                 )
                 if inputted_pattern == "":
                     break
-                if inputted_pattern.isdigit(): # if integer
+                if inputted_pattern.isdigit():  # if integer
                     inputted_pattern = self.all_patterns[int(inputted_pattern)]
                 self.data_validation_engine.verify_pattern_matches_text(
-                    inputted_pattern,
-                    transaction["note"]
+                    inputted_pattern, transaction["note"], hide_text=True
                 )
+                if (
+                    inputted_pattern,
+                    inputted_category,
+                ) not in self.pattern_category_map_list:  # if new pattern -> cat mapping
+                    pattern_category_map_list_copy = deepcopy(
+                        self.pattern_category_map_list
+                    )
+                    pattern_category_map_list_copy.append(
+                        (inputted_pattern, inputted_category)
+                    )
+                    self.data_validation_engine.verify_no_pattern_maps_to_more_than_one_category(
+                        pattern_category_map_list_copy
+                    )
                 break
             except KeyboardInterrupt:
+                print("Exiting without saving")
                 exit()
-            except:
-                print("Invalid input. Please try again.")
-        return inputted_category
-
+            except Exception as e:
+                print(f"\n❌❌❌❌Invalid input. Please try again. Error: {e}")
+        return inputted_pattern
 
     def save_categorized_transactions(self, categorized_transactions):
         # reorder columns
