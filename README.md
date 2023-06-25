@@ -24,7 +24,7 @@ This application offers an intuitive terminal user interface that allows for fas
 - American Express Blue Cash Preferred Card
 
 To support more accounts, please submit a PR with these changes:
-1) Add the account name and columns of raw downloaded csv to `spending_tracker/config.yml`
+1) Add the account name and columns of the raw downloaded csv to `spending_tracker/config.yml`
 2) Add method with the same name in `spending_tracker/engines/raw_data_processing_engine.py` for that account.
 
 # How to run
