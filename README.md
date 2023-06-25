@@ -6,7 +6,7 @@ Python application for tracking expenses and providing analytics with an emphasi
 
 Commercial expense trackers have their limitations, such as:
 
-- Unable to map and categorize expenses sourced in outside accounts. For example, Amazon purchases are often grouped and just appear as "AMZN MKTP XXXX-XXXXX-XXXX" on your Credit Card. Was that purchase Electronics/Clothing/Groceries? Was it a single or multiple items? Who knows...
+- Unable to map and categorize expenses sourced in outside accounts. For example, Amazon purchases are often grouped and just appear as "AMZN MKTP XXXX-XXXXX-XXXX" on your Credit Card. Was that purchase Electronics/Clothing/Groceries? Was it a single or multiple items? Finding out involves much manual work...
 - Unable to use powerful Regular Expressions to auto-categorize transactions.
 - Sharing finances with 3rd party who may not have strong privacy protections.
 - Getting locked to one particular vendor. Hard to switch and keep your data.
