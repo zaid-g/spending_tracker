@@ -1,25 +1,25 @@
-import pandas as pd
-from copy import deepcopy
-from spending_tracker.engines.data_validation_engine import DataValidationEngine
 import glob
 import os
-import numpy as np
 import re
+from copy import deepcopy
 
-# TODO need to add this to all get inputs AND test with empty raw dir and empty/filled history
+import pandas as pd
+
+from spending_tracker.engines.data_validation_engine import DataValidationEngine
 
 
 class CategorizationEngine:
 
     """This engine is for
     1) Loading historically categorized and new transactions
-    2) categorizing new and/or recategorizing old transactions
+    2) categorizing new and/or recategorizing old transactions using
+    a terminal user interface (TUI)
     """
 
     def __init__(
         self, root_data_folder_path: str, data_validation_engine: DataValidationEngine
     ):
-        self.root_data_folder_path = root_data_folder_path
+        self.root_data_folder_path = root_data_folder_path.rstrip("/") + "/"
         self.processed_data_folder_path = self.root_data_folder_path + "processed/"
         self.data_validation_engine = data_validation_engine
         self.historical_categorized_transactions_file_path = (
@@ -106,6 +106,9 @@ class CategorizationEngine:
     def load_processed_data(
         self,
     ) -> pd.DataFrame:
+        self.data_validation_engine.verify_processed_data_folder_path_not_empty(
+            self.processed_data_folder_path
+        )
         # get processed data file names
         processed_data_file_paths = glob.glob(
             os.path.join(self.processed_data_folder_path, "*.csv")
@@ -143,14 +146,14 @@ class CategorizationEngine:
         """Returns longest pattern that matches text"""
         matched_patterns = []
         for pattern, _ in pattern_category_map_list:
-            if re.compile(pattern).search(text.lower()) != None:
+            if re.compile(pattern).search(text.lower()) is not None:
                 matched_patterns.append(pattern)
         if len(matched_patterns) == 0:
             return
         return max(matched_patterns, key=len)
 
     def get_category_from_pattern(self, pattern, pattern_category_map_dict):
-        if pattern == None:
+        if pattern is None:
             return None
         else:
             return pattern_category_map_dict[pattern]
@@ -244,7 +247,8 @@ class CategorizationEngine:
                     if (
                         inputted_pattern,
                         inputted_category,
-                    ) not in self.pattern_category_map_list:  # if new pattern -> cat mapping
+                    ) not in self.pattern_category_map_list:
+                        # if new pattern -> cat mapping, add it
                         self.pattern_category_map_list.append(
                             (inputted_pattern, inputted_category)
                         )
@@ -261,7 +265,9 @@ class CategorizationEngine:
         while True:
             try:
                 transaction_index = input(
-                    "\nSelect row you would like to categorize, enter `s` to save and quit if this looks good, or press Enter to move to categorize next transaction.\n"
+                    "\nSelect row you would like to categorize, enter `s` "
+                    f"to save and quit if this looks good, or press "
+                    f"Enter to move to categorize next transaction.\n"
                 )
                 if transaction_index == "":
                     transaction_index = last_transaction_index + 1
@@ -315,7 +321,9 @@ class CategorizationEngine:
         print(transaction["note"])
         if pd.notna(transaction["category"]):
             print(
-                f'\n- This transaction is already categorized as **{transaction["category"]}** with pattern: **{transaction["pattern"]}**'
+                f"\n- This transaction is already categorized as "
+                f'**{transaction["category"]}** with pattern: '
+                f'**{transaction["pattern"]}**'
             )
 
     def print_all_categories(self) -> None:
@@ -332,7 +340,8 @@ class CategorizationEngine:
         while True:
             try:
                 inputted_category = input(
-                    f"\nCategorize this transaction by typing in category or selecting index of pre-existing category (enter to skip):\n"
+                    "\nCategorize this transaction by typing in category "
+                    "or selecting index of pre-existing category (enter to skip):\n"
                 )
                 if inputted_category.isdigit():  # if integer
                     inputted_category = self.all_categories[int(inputted_category)]
@@ -341,15 +350,17 @@ class CategorizationEngine:
             except KeyboardInterrupt:
                 print("Exiting without saving")
                 exit()
-            except:
-                print("\n❌❌❌❌Invalid input. Please try again.")
+            except Exception as e:
+                print(f"\n❌❌❌❌Invalid input. Please try again. {e}")
         return inputted_category
 
     def get_user_input_for_pattern(self, transaction, inputted_category) -> str:
         while True:
             try:
                 inputted_pattern = input(
-                    f"\nAdd a pattern for category **{inputted_category}** based on this transaction. Assume text is lower-cased. (enter to skip)\n\n{transaction['note']}\n\n"
+                    f"\nAdd a pattern for category **{inputted_category}** based "
+                    f"on this transaction. Assume text is lower-cased. "
+                    f"(enter to skip)\n\n{transaction['note']}\n\n"
                 )
                 if inputted_pattern == "":
                     break
@@ -361,7 +372,8 @@ class CategorizationEngine:
                 if (
                     inputted_pattern,
                     inputted_category,
-                ) not in self.pattern_category_map_list:  # if new pattern -> cat mapping
+                ) not in self.pattern_category_map_list:
+                    # if new pattern -> cat mapping, validate
                     pattern_category_map_list_copy = deepcopy(
                         self.pattern_category_map_list
                     )

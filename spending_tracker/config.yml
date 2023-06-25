@@ -1,11 +1,11 @@
 supported_accounts:
-  # Here are the supported source accounts and their respective 
+  # Here are the supported source accounts and their respective
   # columns (of their downloaded csv's based on the default download
   # method). If the financial company changes the format of the
   # downloaded raw transaction files a new item is added here to
-  # for that format (appended with the year of when that 
+  # for that format (appended with the year of when that
   # change occured).
-  # 
+  #
   # *** FORMAT : <account_name>_<format_year>_<format_increment>
   # e.g. citi_double_cash_2022_2 for the second published format
   # for the citi double cash card in 2022.

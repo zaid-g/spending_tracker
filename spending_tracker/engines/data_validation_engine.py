@@ -1,20 +1,31 @@
-import re
-from dependency_injector import providers
-import json
 import datetime
-from dateutil import parser
-import sys
 import os
-import os
-import dateutil
+import re
+
 import pandas as pd
-import hashlib
-import numpy as np
+from dateutil import parser
 
 
 class DataValidationEngine:
     def __init__(self, supported_accounts: dict):
         self.supported_accounts = supported_accounts
+
+    @staticmethod
+    def verify_processed_data_folder_path_not_empty(folder_path):
+        if len(os.listdir(folder_path)) == 0:
+            raise FileNotFoundError(
+                f"No files found in {folder_path} (no raw files were processed)"
+            )
+
+    @staticmethod
+    def verify_path_not_file(root_data_folder_path) -> None:
+        if os.path.exists(root_data_folder_path) and os.path.isfile(
+            root_data_folder_path
+        ):
+            raise FileExistsError(
+                f"Root data folder path {root_data_folder_path} "
+                f"is a file. Must be folder."
+            )
 
     def verify_processed_data_bound_by_date_range(
         self, processed_data_file_name, processed_data
@@ -33,10 +44,12 @@ class DataValidationEngine:
             (processed_data["datetime"] > to_date)
         ):
             raise ValueError(
-                f"Out of bound transaction in processed data {processed_data_file_name}. Please check date range of raw file/transactions."
+                f"Out of bound transaction "
+                f"in processed data {processed_data_file_name}. "
+                f"Please check date range of raw file/transactions."
             )
 
-    def verify_raw_data_file_names_contain_only_single_account(
+    def verify_raw_data_file_names_contain_one_account(
         self, raw_data_file_names
     ) -> None:
         for raw_data_file_name in raw_data_file_names:
@@ -46,11 +59,15 @@ class DataValidationEngine:
                     num_accounts_in_name += 1
             if num_accounts_in_name == 0:
                 raise ValueError(
-                    f"{raw_data_file_name} does not contain any supported account: {[acc for acc in self.supported_accounts]}.\n Cannot identify file"
+                    f"{raw_data_file_name} does not contain any supported "
+                    f"account: {[acc for acc in self.supported_accounts]}.\n"
+                    f"Cannot identify file"
                 )
             elif num_accounts_in_name > 1:
                 raise ValueError(
-                    f"{raw_data_file_name} contains multiple accounts. Please fix name to contain only one of the supported accounts {[acc for acc in self.supported_accounts]}"
+                    f"{raw_data_file_name} contains multiple accounts. "
+                    f"Please fix name to contain only one of the supported "
+                    f"accounts {[acc for acc in self.supported_accounts]}"
                 )
 
     def verify_raw_data_contains_correct_columns(
@@ -58,10 +75,12 @@ class DataValidationEngine:
     ):
         if set(raw_data.columns) != set(self.supported_accounts[account]):
             raise ValueError(
-                f"Invalid columns in {raw_data_file_path} based on account {account}.\nCheck config.yaml for more details. {raw_data.columns} != {self.supported_accounts[account]}"
+                f"Invalid columns in {raw_data_file_path} based on account "
+                f"{account}.\nCheck config.yaml for more details. "
+                f"{raw_data.columns} != {self.supported_accounts[account]}"
             )
 
-    def verify_raw_data_file_names_contain_proper_date_ranges_for_each_account(
+    def verify_account_raw_data_file_names_date_ranges(
         self, raw_data_file_names
     ) -> None:
         """Group the raw data file names by (supported) account names.
@@ -97,7 +116,8 @@ class DataValidationEngine:
             )
             if to_date <= from_date:
                 raise ValueError(
-                    f"Found file with from date greater than to date {account_raw_data_file_names[i]}"
+                    f"Found file with from date greater than to date "
+                    f"{account_raw_data_file_names[i]}"
                 )
         # next verify no overlaps in date ranges
         for i in range(len(account_raw_data_file_names) - 1):
@@ -113,7 +133,8 @@ class DataValidationEngine:
             )
             if (from_date_next - to_date) < datetime.timedelta(days=1):
                 raise ValueError(
-                    f"Found overlaps in date range for {account_raw_data_file_names[i], account_raw_data_file_names[i+1]}"
+                    f"Found overlaps in date range for "
+                    f"{account_raw_data_file_names[i], account_raw_data_file_names[i+1]}"
                 )
 
     def verify_raw_data_file_names_contain_date_range(
@@ -123,13 +144,14 @@ class DataValidationEngine:
         for raw_data_file_name in raw_data_file_names:
             if not self.contains_date_range(raw_data_file_name):
                 raise ValueError(
-                    f"No date range detected in file {file}. Format is \n^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}"
+                    f"No date range detected in file {raw_data_file_name}. "
+                    f"Format is \nYYYY-MM-DD_to_YYYY-MM-DD_*"
                 )
 
     @staticmethod
     def contains_date_range(file_name) -> bool:
         match_ = re.search(r"^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}", file_name)
-        if match_ == None:
+        if match_ is None:
             return False
         return True
 
@@ -137,17 +159,15 @@ class DataValidationEngine:
     def verify_no_duplicate_ids(df: pd.DataFrame) -> None:
         if len(df) != len(df.id.value_counts()):
             raise ValueError(
-                f"Found duplicate ID(s):\n {df[df.id.isin(df.id.value_counts()[ df.id.value_counts() > 1 ].index)]}"
+                f"Found duplicate ID(s):\n "
+                f"{df[df.id.isin(df.id.value_counts()[df.id.value_counts() > 1].index)]}"
             )
 
     @staticmethod
     def verify_no_pattern_maps_to_more_than_one_category(pattern_category_map_list):
-        patterns = sorted(
-            list(set([pattern for pattern, _ in pattern_category_map_list]))
-        )
-        categories = sorted(
-            list(set([category for _, category in pattern_category_map_list]))
-        )
+        patterns = [
+            pattern_category[0] for pattern_category in pattern_category_map_list
+        ]
         for pattern in patterns:
             mapped_categories = set()
             for i in range(len(pattern_category_map_list)):
@@ -155,7 +175,8 @@ class DataValidationEngine:
                     mapped_categories.add(pattern_category_map_list[i][1])
             if len(mapped_categories) != 1:
                 raise ValueError(
-                    f"Found the same pattern **{pattern}** mapping to more than one category **{mapped_categories}**"
+                    f"Found the same pattern **{pattern}** "
+                    f"mapping to more than one category **{mapped_categories}**"
                 )
 
     @staticmethod
@@ -170,11 +191,9 @@ class DataValidationEngine:
         text = text.lower()
         if pd.isna(pattern):
             return
-        if re.compile(pattern).search(text) == None:
+        if re.compile(pattern).search(text) is None:
             if hide_text:
-                raise ValueError(
-                    f"Pattern doesn't match text."
-                )
+                raise ValueError("Pattern doesn't match text.")
             else:
                 raise ValueError(
                     f"Pattern doesn't match text. Pattern: {pattern} --- Text: {text}"
@@ -187,20 +206,15 @@ class DataValidationEngine:
         if not set(historical_categorized_transactions.id.values).issubset(
             processed_data.id.values
         ):
-            import ipdb
-
-            ipdb.set_trace()
             missing_ids = set(historical_categorized_transactions.id.values) - set(
                 processed_data.id.values
             )
             missing_transactions = historical_categorized_transactions[
                 [historical_categorized_transactions.id.isin(missing_ids)]
             ]
-            import ipdb
-
-            ipdb.set_trace()
             raise ValueError(
-                f"Not all categorized transactions accounted for in processed data folder:\n{missing_transactions}"
+                f"Not all categorized transactions accounted for in processed "
+                f"data folder:\n{missing_transactions}"
             )
 
     @staticmethod
@@ -213,7 +227,7 @@ class DataValidationEngine:
             "third_party_category",
             "note",
         }:
-            raise ValueError(f"Processed data files invalid columns")
+            raise ValueError("Processed data files invalid columns")
 
     @staticmethod
     def verify_categorized_transactions_columns(categorized_transactions) -> None:
@@ -227,7 +241,7 @@ class DataValidationEngine:
             "pattern",
             "category",
         }:
-            raise ValueError(f"Categorized data files invalid columns")
+            raise ValueError("Categorized data files invalid columns")
 
     @staticmethod
     def verify_spend_amount_for_mapped_categories(
@@ -236,21 +250,3 @@ class DataValidationEngine:
         # TODO: DOCUMENT and understand and mby use regex because others might not have
         # the same categories. also write in readme
         return
-
-        # amazon
-        mapped_amazon_total = spend_amount_by_category["mapped/amazon"]
-        amazon_total = sum(
-            df[
-                (df["source"] == "amazon_items") | (df["source"] == "amazon_refunds")
-            ].amount
-        )
-        print(
-            f"\n\nCategory 'mapped/amazon' total = {mapped_amazon_total}, total amazon payments = {amazon_total}"
-        )
-
-        # venmo
-        mapped_venmo_total = spend_amount_by_category["mapped/venmo"]
-        venmo_total = sum(df[df["source"] == "venmo"].amount)
-        print(
-            f"\n\nCategory 'mapped/venmo' total = {mapped_venmo_total}, total venmo payments = {venmo_total}"
-        )

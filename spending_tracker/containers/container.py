@@ -1,9 +1,9 @@
 from dependency_injector import containers, providers
-from dependency_injector.wiring import Provide, inject
-from spending_tracker.engines.raw_data_processing_engine import RawDataProcessingEngine
+
+from spending_tracker.engines.analytics_engine import AnalyticsEngine
 from spending_tracker.engines.categorization_engine import CategorizationEngine
 from spending_tracker.engines.data_validation_engine import DataValidationEngine
-from spending_tracker.engines.analytics_engine import AnalyticsEngine
+from spending_tracker.engines.raw_data_processing_engine import RawDataProcessingEngine
 
 
 class Container(containers.DeclarativeContainer):

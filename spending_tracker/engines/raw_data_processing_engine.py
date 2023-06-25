@@ -1,16 +1,12 @@
-import re
-from dependency_injector import providers
-from spending_tracker.engines.data_validation_engine import DataValidationEngine
-import json
-import datetime
-from dateutil import parser
-import sys
-import os
-import os
-import dateutil
-import pandas as pd
 import hashlib
+import os
+import shutil
+
+import dateutil
 import numpy as np
+import pandas as pd
+
+from spending_tracker.engines.data_validation_engine import DataValidationEngine
 
 
 class RawDataProcessingEngine:
@@ -27,11 +23,12 @@ class RawDataProcessingEngine:
         root_data_folder_path: str,
         supported_accounts: dict,
     ):
-        self.root_data_folder_path = root_data_folder_path
+        self.root_data_folder_path = root_data_folder_path.rstrip("/") + "/"
         self.raw_data_folder_path = self.root_data_folder_path + "raw/"
         self.processed_data_folder_path = self.root_data_folder_path + "processed/"
         self.data_validation_engine = data_validation_engine
         self.supported_accounts = supported_accounts
+        self.create_folder_structure_if_not_exists()
 
     def read_raw_data_file_names(self) -> list:
         raw_data_file_names = []
@@ -42,15 +39,24 @@ class RawDataProcessingEngine:
                 raw_data_file_names.append(file_name)
         return raw_data_file_names
 
+    def create_folder_structure_if_not_exists(self):
+        self.data_validation_engine.verify_path_not_file(self.root_data_folder_path)
+        os.makedirs(self.root_data_folder_path, exist_ok=True)
+        os.makedirs(self.raw_data_folder_path, exist_ok=True)
+        # delete everything in processed_data_folder_path for idempotency
+        # processed files re-created every run based on raw files.
+        shutil.rmtree(self.processed_data_folder_path)
+        os.makedirs(self.processed_data_folder_path, exist_ok=True)
+
     def process_raw_data_files(self) -> None:
         raw_data_file_names = self.read_raw_data_file_names()
         self.data_validation_engine.verify_raw_data_file_names_contain_date_range(
             raw_data_file_names
         )
-        self.data_validation_engine.verify_raw_data_file_names_contain_only_single_account(
+        self.data_validation_engine.verify_raw_data_file_names_contain_one_account(
             raw_data_file_names
         )
-        self.data_validation_engine.verify_raw_data_file_names_contain_proper_date_ranges_for_each_account(
+        self.data_validation_engine.verify_account_raw_data_file_names_date_ranges(
             raw_data_file_names
         )
         for raw_data_file_name in raw_data_file_names:
@@ -80,12 +86,12 @@ class RawDataProcessingEngine:
                 return account
 
     @staticmethod
-    def remove_non_numerical_chars(s) -> float:
-        """This is to convert e.g. '$14.83' to '14.83'"""
+    def remove_non_numerical_chars(str_: str) -> float:
+        """This is to convert e.g. '$14.83' to 14.83"""
         chars = ["-", ".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-        l = list(s)
-        l = [c for c in l if c in chars]
-        return float("".join(l))
+        list_ = list(str_)
+        list_ = [c for c in list_ if c in chars]
+        return float("".join(list_))
 
     def american_express_blue_cash_preferred_2022_1(
         self, raw_data, raw_data_file_path, raw_data_file_name
