@@ -15,6 +15,10 @@ class RawDataProcessingEngine:
     1) Validating raw (downloaded) data integrity.
     2) Processing raw files from various supported accounts (e.g. Chase, Amazon) into
     files with a cleaned and unified format.
+
+    If adding new method to support a new account/format, output should contain
+    [datetime,amount,third_party_category,note,account,id] columns. Checkout the existing
+    methods for more details.
     """
 
     def __init__(

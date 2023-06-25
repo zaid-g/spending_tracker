@@ -1,14 +1,16 @@
 supported_accounts:
-  # Here are the supported source accounts and their respective
-  # columns (of their downloaded csv's based on the default download
-  # method). If the financial company changes the format of the
-  # downloaded raw transaction files a new item is added here to
-  # for that format (appended with the year of when that
-  # change occured).
-  #
+  # Below is a comprehensive list of the supported source accounts along 
+  # with their corresponding columns. The columns are based on the default
+  # download method and represent the structure of the downloaded raw 
+  # transaction files. In the event that the financial company modifies 
+  # the format of the downloaded files, a new item will be appended to
+  # this list, denoting the year in which the change took place and increment
+  # of that change (in the same year). This ensures that the application
+  # remains adaptable to evolving file formats.
+
   # *** FORMAT : <account_name>_<format_year>_<format_increment>
-  # e.g. citi_double_cash_2022_2 for the second published format
-  # for the citi double cash card in 2022.
+  # e.g. citi_double_cash_2022_1 for a published format for the citi double
+  # cash card in 2022.
   amazon_items_2022_1:
     - Order Date
     - Order ID
