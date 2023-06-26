@@ -196,7 +196,7 @@ class CategorizationEngine:
             [uncategorized_processed_data, historical_categorized_transactions],
             axis=0,
             ignore_index=True,
-        )
+        ).sort_values(by=["datetime", "id"])
         self.transactions_to_categorize.index = range(
             len(self.transactions_to_categorize) - 1, -1, -1
         )

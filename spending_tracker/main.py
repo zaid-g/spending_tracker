@@ -37,7 +37,7 @@ if __name__ == "__main__":
         f"{os.path.expanduser('~') + '/spending_tracker_data'}",
         required=True,
     )
-    container.config.from_yaml("./spending_tracker/config.yml")
+    container.config.from_yaml("./spending_tracker/config.yaml")
     container.wire(modules=[__name__])
 
     main()
