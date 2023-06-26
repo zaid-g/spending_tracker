@@ -197,6 +197,7 @@ class CategorizationEngine:
             axis=0,
             ignore_index=True,
         ).sort_values(by=["datetime", "amount", "note", "id"])
+
         self.transactions_to_categorize.index = range(
             len(self.transactions_to_categorize) - 1, -1, -1
         )
@@ -267,7 +268,7 @@ class CategorizationEngine:
                 transaction_index = input(
                     "\nSelect row you would like to categorize, enter `s` "
                     f"to save and quit if this looks good, or press "
-                    f"Enter to move to categorize next transaction.\n"
+                    f"Enter to categorize next transaction.\n"
                 )
                 if transaction_index == "":
                     transaction_index = last_transaction_index + 1

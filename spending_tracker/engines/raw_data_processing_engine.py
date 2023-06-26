@@ -49,7 +49,10 @@ class RawDataProcessingEngine:
         os.makedirs(self.raw_data_folder_path, exist_ok=True)
         # delete everything in processed_data_folder_path for idempotency
         # processed files re-created every run based on raw files.
-        shutil.rmtree(self.processed_data_folder_path)
+        try:
+            shutil.rmtree(self.processed_data_folder_path)
+        except FileNotFoundError:
+            pass
         os.makedirs(self.processed_data_folder_path, exist_ok=True)
 
     def process_raw_data_files(self) -> None:
