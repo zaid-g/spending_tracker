@@ -190,13 +190,13 @@ class CategorizationEngine:
         # keep new uncategorized processed data that user wants to categorize
         uncategorized_processed_data = processed_data[
             ~processed_data.id.isin(historical_categorized_transactions.id.values)
-        ].sort_values(["datetime", "note"], ascending=False, ignore_index=True)
+        ]
         # concatenate new uncategorized processed data with historical categorized data
         self.transactions_to_categorize = pd.concat(
             [uncategorized_processed_data, historical_categorized_transactions],
             axis=0,
             ignore_index=True,
-        ).sort_values(by=["datetime", "id"])
+        ).sort_values(by=["datetime", "amount", "note", "id"])
         self.transactions_to_categorize.index = range(
             len(self.transactions_to_categorize) - 1, -1, -1
         )
@@ -287,20 +287,40 @@ class CategorizationEngine:
         return transaction_index
 
     def print_transactions_to_categorize(self):
-        print()
-        print(
-            self.transactions_to_categorize[
-                [
-                    "note",
-                    "category",
-                    "pattern",
-                    "amount",
-                    "datetime",
-                    "account",
-                    "third_party_category",
-                ]
+        # truncate columns for terminal
+        transactions_to_categorize_print = self.transactions_to_categorize.copy()[
+            [
+                "note",
+                "category",
+                "pattern",
+                "amount",
+                "datetime",
+                "account",
+                "third_party_category",
             ]
+        ]
+        transactions_to_categorize_print[
+            "third_party_category"
+        ] = transactions_to_categorize_print["third_party_category"].fillna("-").apply(
+            lambda str_: self.truncate_string_for_print(str_, 15)
         )
+        transactions_to_categorize_print["account"] = transactions_to_categorize_print[
+            "account"
+        ].fillna("-").apply(lambda str_: self.truncate_string_for_print(str_, 15))
+        transactions_to_categorize_print["pattern"] = transactions_to_categorize_print[
+            "pattern"
+        ].fillna("-").apply(lambda str_: self.truncate_string_for_print(str_, 15))
+        transactions_to_categorize_print["category"] = transactions_to_categorize_print[
+            "category"
+        ].fillna("-").apply(lambda str_: self.truncate_string_for_print(str_, 30))
+        print()
+        print(transactions_to_categorize_print)
+
+    @staticmethod
+    def truncate_string_for_print(str_, width):
+        if len(str_) > width:
+            str_ = str_[: width - 3] + "..."
+        return str_
 
     @staticmethod
     def print_transaction_details(transaction):
