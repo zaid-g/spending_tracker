@@ -14,7 +14,7 @@ Commercial expense trackers have their limitations, such as:
 - Getting locked to one particular vendor. Hard to switch and keep your data.
 - Paid
 
-This application offers an intuitive terminal user interface that allows for fast categorization (and analytics) of all your expenses, without any of these limitations.
+This application offers an intuitive terminal user interface that allows for fast categorization and analytics of all your expenses, without any of these limitations.
 
 # Supported Accounts
 
