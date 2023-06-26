@@ -1,6 +1,6 @@
 # Python Spending Tracker
 
-Python application for tracking expenses and providing analytics with an emphasis on extensibility, usability, future proof-ness, simplicity, and user control. PR's encouraged to support more accounts, see below.
+Python terminal application for tracking expenses and providing analytics with an emphasis on extensibility, usability, future proof-ness, simplicity, and user control. PR's encouraged to support more accounts, see below.
 
 ![Alt text](./screenshots/screenshot.png?raw=true "Title")
 
