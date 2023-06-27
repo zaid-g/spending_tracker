@@ -7,6 +7,8 @@ from spending_tracker.engines.raw_data_processing_engine import RawDataProcessin
 
 
 class Container(containers.DeclarativeContainer):
+    """Main container class for app"""
+
     config = providers.Configuration()
 
     data_validation_engine = providers.Singleton(

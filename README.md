@@ -40,7 +40,7 @@ Python 3.11 required.
     `mkdir -p <path>/spending_tracker_data/raw`
 5. Run `export SPENDING_TRACKER_DATA_PATH=<path>/spending_tracker_data` or add to profile.
 5. Download CSV's for your accounts into the `raw` folder. CSV's should be named with this format:
-   `YYYY-MM-DD_to_YYYY-MM-DD*<account_name>*.csv`. For example `2022-09-01_to_2022-12-31_citi_double_cash_2022_1_lastyear2022.csv`
+   `YYYY-MM-DD_to_YYYY-MM-DD*<account_name>*.csv`. For example `2022-09-01_to_2022-12-31_citi_double_cash_2022_1_lastyear2022.csv`. The `citi_double_cash_2022_1` is the account name as specified in `spending_tracker/config.yaml`. As long as the institution doesn't change their csv export format from 2022 onwards, it should keep working.
 6. Run `python3 -m spending_tracker.main`
 
 Once done, a new file, `<path>/data/categorized_transactions.csv` will store your categorized transactions. The next time you run the app with new files in the `raw` folder, it will remember and apply all the Regular Expression patterns created in previous runs on the new transactions (of course, you can override these auto-categorizations).

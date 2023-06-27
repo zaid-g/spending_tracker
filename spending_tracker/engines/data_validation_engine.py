@@ -11,14 +11,17 @@ class DataValidationEngine:
         self.supported_accounts = supported_accounts
 
     @staticmethod
-    def verify_processed_data_folder_path_not_empty(folder_path):
+    def verify_processed_data_folder_path_not_empty(folder_path: str) -> None:
+        """If processed data folder is empty that's because no raw files
+        were processed. Processed data folder cleared with every run for idempotency"""
         if len(os.listdir(folder_path)) == 0:
             raise FileNotFoundError(
                 f"No files found in {folder_path} (no raw files were processed)"
             )
 
     @staticmethod
-    def verify_path_not_file(root_data_folder_path) -> None:
+    def verify_path_not_file(root_data_folder_path: str) -> None:
+        """Make sure path is either non-existant or a folder"""
         if os.path.exists(root_data_folder_path) and os.path.isfile(
             root_data_folder_path
         ):
@@ -28,8 +31,9 @@ class DataValidationEngine:
             )
 
     def verify_processed_data_bound_by_date_range(
-        self, processed_data_file_name, processed_data
-    ):
+        self, processed_data_file_name: str, processed_data: pd.DataFrame
+    ) -> None:
+        """Transactions in file must be bound by date range in file name"""
         from_date = parser.parse(
             processed_data_file_name[0:4]
             + processed_data_file_name[5:7]
@@ -50,8 +54,9 @@ class DataValidationEngine:
             )
 
     def verify_raw_data_file_names_contain_one_account(
-        self, raw_data_file_names
+        self, raw_data_file_names: list[str]
     ) -> None:
+        """One raw file must be associated with one account only"""
         for raw_data_file_name in raw_data_file_names:
             num_accounts_in_name = 0
             for supported_account in self.supported_accounts:
@@ -71,8 +76,10 @@ class DataValidationEngine:
                 )
 
     def verify_raw_data_contains_correct_columns(
-        self, raw_data, raw_data_file_path, account
-    ):
+        self, raw_data: pd.DataFrame, raw_data_file_path: str, account: str
+    ) -> None:
+        """Uses the columns defined in config.yaml for each account to verify
+        they exist in raw data file for the respective account"""
         if set(raw_data.columns) != set(self.supported_accounts[account]):
             raise ValueError(
                 f"Invalid columns in {raw_data_file_path} based on account "
@@ -81,7 +88,7 @@ class DataValidationEngine:
             )
 
     def verify_account_raw_data_file_names_date_ranges(
-        self, raw_data_file_names
+        self, raw_data_file_names: list[str]
     ) -> None:
         """Group the raw data file names by (supported) account names.
         For each group, make sure that the date ranges are valid and
@@ -100,8 +107,12 @@ class DataValidationEngine:
 
     @staticmethod
     def verify_raw_data_file_name_contains_proper_date_ranges_for_each_account(
-        account_raw_data_file_names,
+        account_raw_data_file_names: list[str],
     ) -> None:
+        """Group the raw data file names by (supported) account names.
+        For each group, make sure that the date ranges are valid and
+        that there are no overlaps (to make sure no duplicate transactions).
+        """
         # first verify that to date > from date
         for i in range(len(account_raw_data_file_names)):
             from_date = parser.parse(
@@ -149,7 +160,8 @@ class DataValidationEngine:
                 )
 
     @staticmethod
-    def contains_date_range(file_name) -> bool:
+    def contains_date_range(file_name: str) -> bool:
+        """YYYY-MM-DD_to_YYYY-MM-DD format"""
         match_ = re.search(r"^\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}", file_name)
         if match_ is None:
             return False
@@ -157,6 +169,7 @@ class DataValidationEngine:
 
     @staticmethod
     def verify_no_duplicate_ids(df: pd.DataFrame) -> None:
+        """ID is a hash of each unique transaction's information"""
         if len(df) != len(df.id.value_counts()):
             raise ValueError(
                 f"Found duplicate ID(s):\n "
@@ -164,7 +177,9 @@ class DataValidationEngine:
             )
 
     @staticmethod
-    def verify_no_pattern_maps_to_more_than_one_category(pattern_category_map_list):
+    def verify_no_pattern_maps_to_more_than_one_category(
+        pattern_category_map_list: list,
+    ) -> None:
         patterns = [
             pattern_category[0] for pattern_category in pattern_category_map_list
         ]
@@ -187,7 +202,7 @@ class DataValidationEngine:
             raise ValueError("Category must be string")
 
     @staticmethod
-    def verify_pattern_matches_text(pattern, text, hide_text=False) -> None:
+    def verify_pattern_matches_text(pattern: str, text: str, hide_text=False) -> None:
         text = text.lower()
         if pd.isna(pattern):
             return
@@ -201,8 +216,9 @@ class DataValidationEngine:
 
     @staticmethod
     def verify_all_historical_categorized_transactions_accounted_for_in_processed_data(
-        historical_categorized_transactions, processed_data
+        historical_categorized_transactions: pd.DataFrame, processed_data: pd.DataFrame
     ) -> None:
+        """Transactions user historically categorized must still exist in the raw folder"""
         if not set(historical_categorized_transactions.id.values).issubset(
             processed_data.id.values
         ):
@@ -219,6 +235,7 @@ class DataValidationEngine:
 
     @staticmethod
     def verify_processed_data_columns(processed_data) -> None:
+        """Processed data regardless of source account must have similar format"""
         if set(processed_data.columns) != {
             "id",
             "datetime",
@@ -230,7 +247,10 @@ class DataValidationEngine:
             raise ValueError("Processed data files invalid columns")
 
     @staticmethod
-    def verify_categorized_transactions_columns(categorized_transactions) -> None:
+    def verify_categorized_transactions_columns(
+        categorized_transactions: pd.DataFrame,
+    ) -> None:
+        """Categorized transactions columns must be these"""
         if set(categorized_transactions.columns) != {
             "id",
             "datetime",

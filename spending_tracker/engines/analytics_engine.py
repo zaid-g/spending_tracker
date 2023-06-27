@@ -20,6 +20,7 @@ class AnalyticsEngine:
         )
 
     def analyze_categorized_transactions(self) -> tuple:
+        """Run analyses on finalized user categorized expenses"""
         self.data_validation_engine.verify_spend_amount_for_mapped_categories(
             self.categorized_transactions
         )

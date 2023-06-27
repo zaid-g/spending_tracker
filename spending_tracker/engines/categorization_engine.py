@@ -27,6 +27,7 @@ class CategorizationEngine:
         )
 
     def load_historical_categorized_transactions(self) -> pd.DataFrame:
+        """Load user-categorized transactions from previous runs"""
         if os.path.isfile(self.historical_categorized_transactions_file_path) is False:
             historical_categorized_transactions = pd.DataFrame(
                 columns=[
@@ -69,9 +70,9 @@ class CategorizationEngine:
         return historical_categorized_transactions
 
     def get_all_patterns_categories_from_historical_categorized_transactions(
-        self, historical_categorized_transactions
-    ):
-        """returns tuple and dict objects"""
+        self, historical_categorized_transactions: pd.DataFrame
+    ) -> tuple[list, dict, list, list]:
+        """Extracts patterns and categories and returns in multiple formats"""
         pattern_category_map_list = list(
             set(
                 [
@@ -106,6 +107,7 @@ class CategorizationEngine:
     def load_processed_data(
         self,
     ) -> pd.DataFrame:
+        """Loads all data processed from all raw files in the /raw folder"""
         self.data_validation_engine.verify_processed_data_folder_path_not_empty(
             self.processed_data_folder_path
         )
@@ -129,8 +131,12 @@ class CategorizationEngine:
         return processed_data
 
     def categorize_processed_data_using_historical_patterns(
-        self, processed_data, pattern_category_map_list, pattern_category_map_dict
+        self,
+        processed_data: pd.DataFrame,
+        pattern_category_map_list: list,
+        pattern_category_map_dict: dict,
     ) -> None:
+        """Uses patterns user created from previous runs to categorize new transactions"""
         processed_data.loc[:, "pattern"] = processed_data["note"].apply(
             lambda text: self.get_longest_pattern_that_matches_text(
                 text, pattern_category_map_list
@@ -142,7 +148,9 @@ class CategorizationEngine:
             )
         )
 
-    def get_longest_pattern_that_matches_text(self, text, pattern_category_map_list):
+    def get_longest_pattern_that_matches_text(
+        self, text, pattern_category_map_list
+    ) -> str:
         """Returns longest pattern that matches text"""
         matched_patterns = []
         for pattern, _ in pattern_category_map_list:
@@ -152,7 +160,9 @@ class CategorizationEngine:
             return
         return max(matched_patterns, key=len)
 
-    def get_category_from_pattern(self, pattern, pattern_category_map_dict):
+    def get_category_from_pattern(
+        self, pattern: str, pattern_category_map_dict: dict
+    ) -> str:
         if pattern is None:
             return None
         else:
@@ -197,7 +207,6 @@ class CategorizationEngine:
             axis=0,
             ignore_index=True,
         ).sort_values(by=["datetime", "amount", "note", "id"])
-
         self.transactions_to_categorize.index = range(
             len(self.transactions_to_categorize) - 1, -1, -1
         )
@@ -207,6 +216,7 @@ class CategorizationEngine:
         )
 
     def run_categorization_TUI(self):
+        """Terminal user interface prompting user to categorize new transactions"""
         # time to ask user to confirm or override
         # sort categories and patterns for visual display
         transaction_index = -1  # default value
@@ -300,25 +310,31 @@ class CategorizationEngine:
                 "third_party_category",
             ]
         ]
-        transactions_to_categorize_print[
-            "third_party_category"
-        ] = transactions_to_categorize_print["third_party_category"].fillna("-").apply(
-            lambda str_: self.truncate_string_for_print(str_, 15)
+        transactions_to_categorize_print["third_party_category"] = (
+            transactions_to_categorize_print["third_party_category"]
+            .fillna("-")
+            .apply(lambda str_: self.truncate_string_for_print(str_, 15))
         )
-        transactions_to_categorize_print["account"] = transactions_to_categorize_print[
-            "account"
-        ].fillna("-").apply(lambda str_: self.truncate_string_for_print(str_, 15))
-        transactions_to_categorize_print["pattern"] = transactions_to_categorize_print[
-            "pattern"
-        ].fillna("-").apply(lambda str_: self.truncate_string_for_print(str_, 15))
-        transactions_to_categorize_print["category"] = transactions_to_categorize_print[
-            "category"
-        ].fillna("-").apply(lambda str_: self.truncate_string_for_print(str_, 30))
+        transactions_to_categorize_print["account"] = (
+            transactions_to_categorize_print["account"]
+            .fillna("-")
+            .apply(lambda str_: self.truncate_string_for_print(str_, 15))
+        )
+        transactions_to_categorize_print["pattern"] = (
+            transactions_to_categorize_print["pattern"]
+            .fillna("-")
+            .apply(lambda str_: self.truncate_string_for_print(str_, 15))
+        )
+        transactions_to_categorize_print["category"] = (
+            transactions_to_categorize_print["category"]
+            .fillna("-")
+            .apply(lambda str_: self.truncate_string_for_print(str_, 30))
+        )
         print()
         print(transactions_to_categorize_print)
 
     @staticmethod
-    def truncate_string_for_print(str_, width):
+    def truncate_string_for_print(str_, width: int) -> str:
         if len(str_) > width:
             str_ = str_[: width - 3] + "..."
         return str_
@@ -413,6 +429,7 @@ class CategorizationEngine:
         return inputted_pattern
 
     def save_categorized_transactions(self, categorized_transactions):
+        """Write new history"""
         # reorder columns
         categorized_transactions = categorized_transactions[
             [

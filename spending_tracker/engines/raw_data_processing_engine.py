@@ -35,6 +35,7 @@ class RawDataProcessingEngine:
         self.create_folder_structure_if_not_exists()
 
     def read_raw_data_file_names(self) -> list:
+        """Read from /raw folder"""
         raw_data_file_names = []
         for file_name in os.listdir(self.raw_data_folder_path):
             if os.path.isfile(os.path.join(self.raw_data_folder_path, file_name)) and (
@@ -56,6 +57,9 @@ class RawDataProcessingEngine:
         os.makedirs(self.processed_data_folder_path, exist_ok=True)
 
     def process_raw_data_files(self) -> None:
+        """Reads each file from the /raw folder, processes it into one shared format
+        regardless of source account, and saves as csv with the same name in the
+        /processed folder"""
         raw_data_file_names = self.read_raw_data_file_names()
         self.data_validation_engine.verify_raw_data_file_names_contain_date_range(
             raw_data_file_names
@@ -88,6 +92,7 @@ class RawDataProcessingEngine:
             )
 
     def detect_account_in_raw_data_file_name(self, raw_data_file_name: str) -> str:
+        """Get account from the raw data file name"""
         for account in self.supported_accounts:
             if account in raw_data_file_name:
                 return account
@@ -103,6 +108,8 @@ class RawDataProcessingEngine:
     def american_express_blue_cash_preferred_2022_1(
         self, raw_data, raw_data_file_path, raw_data_file_name
     ) -> pd.DataFrame:
+        """Method for parsing American Express Blue Cash Preferred exports with
+        the csv export format since 2022"""
         raw_data = raw_data.loc[:, ("Date", "Amount", "Description", "account")]
         raw_data.columns = ["datetime", "amount", "note", "account"]
         raw_data["third_party_category"] = None
