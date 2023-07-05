@@ -130,21 +130,20 @@ class CategorizationEngine:
         self.data_validation_engine.verify_no_duplicate_ids(processed_data)
         return processed_data
 
-    def categorize_processed_data_using_historical_patterns(
-        self,
-        processed_data: pd.DataFrame,
-        pattern_category_map_list: list,
-        pattern_category_map_dict: dict,
+    def categorize_data_using_pattern_category_map(
+        self, data: pd.DataFrame, indices=None
     ) -> None:
-        """Uses patterns user created from previous runs to categorize new transactions"""
-        processed_data.loc[:, "pattern"] = processed_data["note"].apply(
+        """Uses patterns user created from seen data to categorize new transactions"""
+        if indices is None:
+            indices = data.index
+        data.loc[indices, "pattern"] = data.loc[indices, "note"].apply(
             lambda text: self.get_longest_pattern_that_matches_text(
-                text, pattern_category_map_list
+                text, self.pattern_category_map_list
             )
         )
-        processed_data.loc[:, "category"] = processed_data["pattern"].apply(
+        data.loc[indices, "category"] = data.loc[indices, "pattern"].apply(
             lambda pattern: self.get_category_from_pattern(
-                pattern, pattern_category_map_dict
+                pattern, self.pattern_category_map_dict
             )
         )
 
@@ -187,23 +186,21 @@ class CategorizationEngine:
         # load processed data
         processed_data = self.load_processed_data()
         # categorize processed data using historically created patterns
-        self.categorize_processed_data_using_historical_patterns(
-            processed_data,
-            self.pattern_category_map_list,
-            self.pattern_category_map_dict,
-        )
+        self.categorize_data_using_pattern_category_map(processed_data)
         # make sure no missing rows from processed data
         self.data_validation_engine.verify_all_historical_categorized_transactions_accounted_for_in_processed_data(
             historical_categorized_transactions, processed_data
         )
-        # discard processed data that was already historically categorized and
+        # discard processed data that was already historically categorized (seen) and
         # keep new uncategorized processed data that user wants to categorize
-        uncategorized_processed_data = processed_data[
+        unseen_processed_data = processed_data[
             ~processed_data.id.isin(historical_categorized_transactions.id.values)
         ]
         # concatenate new uncategorized processed data with historical categorized data
+        unseen_processed_data["seen"] = False
+        historical_categorized_transactions["seen"] = True
         self.transactions_to_categorize = pd.concat(
-            [uncategorized_processed_data, historical_categorized_transactions],
+            [unseen_processed_data, historical_categorized_transactions],
             axis=0,
             ignore_index=True,
         ).sort_values(by=["datetime", "amount", "note", "id"])
@@ -260,17 +257,27 @@ class CategorizationEngine:
                         inputted_category,
                     ) not in self.pattern_category_map_list:
                         # if new pattern -> cat mapping, add it
+                        if inputted_pattern not in self.all_patterns:
+                            self.all_patterns.append(inputted_pattern)
                         self.pattern_category_map_list.append(
                             (inputted_pattern, inputted_category)
                         )
                         self.pattern_category_map_dict[
                             inputted_pattern
                         ] = inputted_category
+                        # tag the transaction with the pattern
                         self.transactions_to_categorize.loc[
                             transaction_index, "pattern"
                         ] = inputted_pattern
-                        if inputted_pattern not in self.all_patterns:
-                            self.all_patterns.append(inputted_pattern)
+                        # tag transaction as seen
+                        self.transactions_to_categorize.loc[
+                            transaction_index, "seen"
+                        ] = True
+                        # apply all pattern including new on unseen data
+                        self.categorize_data_using_pattern_category_map(
+                            self.transactions_to_categorize,
+                            self.transactions_to_categorize["seen"] == False,
+                        )
 
     def get_user_input_for_transaction_index(self, last_transaction_index=-1) -> int:
         while True:
