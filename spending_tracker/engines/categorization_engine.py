@@ -310,7 +310,7 @@ class CategorizationEngine:
 
     def print_transactions_to_categorize(self):
         # truncate columns for terminal
-        transactions_to_categorize_print = self.transactions_to_categorize.copy()[
+        transactions_to_categorize_print = self.transactions_to_categorize.copy().fillna('-')[
             [
                 "note",
                 "category",
@@ -323,22 +323,18 @@ class CategorizationEngine:
         ]
         transactions_to_categorize_print["third_party_category"] = (
             transactions_to_categorize_print["third_party_category"]
-            .fillna("-")
             .apply(lambda str_: self.truncate_string_for_print(str_, 15))
         )
         transactions_to_categorize_print["account"] = (
             transactions_to_categorize_print["account"]
-            .fillna("-")
             .apply(lambda str_: self.truncate_string_for_print(str_, 15))
         )
         transactions_to_categorize_print["pattern"] = (
             transactions_to_categorize_print["pattern"]
-            .fillna("-")
             .apply(lambda str_: self.truncate_string_for_print(str_, 15))
         )
         transactions_to_categorize_print["category"] = (
             transactions_to_categorize_print["category"]
-            .fillna("-")
             .apply(lambda str_: self.truncate_string_for_print(str_, 30))
         )
         print()
