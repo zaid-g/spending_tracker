@@ -11,62 +11,6 @@ supported_accounts:
   # *** FORMAT : <account_name>_<format_year>_<format_increment>
   # e.g. citi_double_cash_2022_1 for a published format for the citi double
   # cash card in 2022.
-  amazon_items_2022_1:
-    - Order Date
-    - Order ID
-    - Title
-    - Category
-    - ASIN/ISBN
-    - UNSPSC Code
-    - Website
-    - Release Date
-    - Condition
-    - Seller
-    - Seller Credentials
-    - List Price Per Unit
-    - Purchase Price Per Unit
-    - Quantity
-    - Payment Instrument Type
-    - Purchase Order Number
-    - PO Line Number
-    - Ordering Customer Email
-    - Shipment Date
-    - Shipping Address Name
-    - Shipping Address Street 1
-    - Shipping Address Street 2
-    - Shipping Address City
-    - Shipping Address State
-    - Shipping Address Zip
-    - Order Status
-    - Carrier Name & Tracking Number
-    - Item Subtotal
-    - Item Subtotal Tax
-    - Item Total
-    - Tax Exemption Applied
-    - Tax Exemption Type
-    - Exemption Opt-Out
-    - Buyer Name
-    - Currency
-    - Group Name
-  amazon_refunds_2022_1:
-    - Order ID
-    - Order Date
-    - Title
-    - Category
-    - ASIN/ISBN
-    - Website
-    - Purchase Order Number
-    - Refund Date
-    - Refund Condition
-    - Refund Amount
-    - Refund Tax Amount
-    - Tax Exemption Applied
-    - Refund Reason
-    - Quantity
-    - Seller
-    - Seller Credentials
-    - Buyer Name
-    - Group Name
   citi_double_cash_2022_1:
     - Status
     - Date
@@ -79,7 +23,21 @@ supported_accounts:
     - Description
     - Debit
     - Credit
+  amex_blue_cash_preferred_2022_1:
+    - Date
+    - Description
+    - Card Member
+    - "Account #"
+    - Amount
   chase_freedom_unlimited_2022_1:
+    - Transaction Date
+    - Post Date
+    - Description
+    - Category
+    - Type
+    - Amount
+    - Memo
+  chase_amazon_visa_2022_1:
     - Transaction Date
     - Post Date
     - Description
@@ -95,9 +53,15 @@ supported_accounts:
     - Type
     - Balance
     - "Check or Slip #"
-  american_express_blue_cash_preferred_2022_1:
-    - Date
-    - Description
-    - Card Member
-    - "Account #"
-    - Amount
+  amazon_2023_1:
+    - order id
+    - items
+    - to
+    - date
+    - total
+    - shipping
+    - shipping_refund
+    - gift
+    - tax
+    - refund
+    - payments

@@ -73,7 +73,7 @@ class RawDataProcessingEngine:
         for raw_data_file_name in raw_data_file_names:
             account = self.detect_account_in_raw_data_file_name(raw_data_file_name)
             raw_data_file_path = self.raw_data_folder_path + raw_data_file_name
-            raw_data = pd.read_csv(raw_data_file_path)
+            raw_data = pd.read_csv(raw_data_file_path, index_col=False)
             self.data_validation_engine.verify_raw_data_contains_correct_columns(
                 raw_data, raw_data_file_path, account
             )
@@ -105,7 +105,7 @@ class RawDataProcessingEngine:
         list_ = [c for c in list_ if c in chars]
         return float("".join(list_))
 
-    def american_express_blue_cash_preferred_2022_1(
+    def amex_blue_cash_preferred_2022_1(
         self, raw_data, raw_data_file_path, raw_data_file_name
     ) -> pd.DataFrame:
         """Method for parsing American Express Blue Cash Preferred exports with
@@ -233,6 +233,11 @@ class RawDataProcessingEngine:
         )
         return raw_data
 
+    def chase_amazon_visa_2022_1(
+        self, *kwargs
+    ) -> pd.DataFrame:
+        return self.chase_freedom_unlimited_2022_1(*kwargs)
+
     def chase_freedom_unlimited_2022_1(
         self, raw_data, raw_data_file_path, raw_data_file_name
     ) -> pd.DataFrame:
@@ -271,6 +276,32 @@ class RawDataProcessingEngine:
         raw_data = raw_data.loc[:, ("Posting Date", "Amount", "Description", "account")]
         raw_data.columns = ["datetime", "amount", "note", "account"]
         raw_data["amount"] = raw_data["amount"].apply(lambda x: -x)
+        raw_data["third_party_category"] = None
+        raw_data = raw_data[
+            ["datetime", "amount", "account", "third_party_category", "note"]
+        ]
+        raw_data["datetime"] = raw_data["datetime"].apply(
+            lambda datetime_string: dateutil.parser.parse(datetime_string)
+        )
+        raw_data["note"] = raw_data["account"] + "_" + raw_data["note"]
+        raw_data["note"] = raw_data["note"].apply(lambda s: s.replace(",", "."))
+        raw_data["id"] = raw_data.apply(
+            lambda row: hashlib.sha256(str(row.values).encode("utf-8")).hexdigest()[
+                0:30
+            ],
+            axis=1,
+        )
+        return raw_data
+
+    def amazon_2023_1(
+        self, raw_data, raw_data_file_path, raw_data_file_name
+    ) -> pd.DataFrame:
+        if raw_data.iloc[-1][0] == 'order id': # fix error in this format
+            raw_data = raw_data.drop(raw_data.index[-1])
+        raw_data["amount"] = raw_data["total"].astype(float) + raw_data["gift"].astype(float) - raw_data["refund"].astype(float)
+        import ipdb; ipdb.set_trace()
+        raw_data = raw_data.loc[:, ("date", "amount", "items", "account")]
+        raw_data.columns = ["datetime", "amount", "note", "account"]
         raw_data["third_party_category"] = None
         raw_data = raw_data[
             ["datetime", "amount", "account", "third_party_category", "note"]

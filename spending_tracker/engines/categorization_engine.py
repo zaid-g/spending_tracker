@@ -113,7 +113,7 @@ class CategorizationEngine:
         )
         # get processed data file names
         processed_data_file_paths = glob.glob(
-            os.path.join(self.processed_data_folder_path, "*.csv")
+            os.path.join(self.processed_data_folder_path, "*.[cC][sS][vV]")
         )
         # load all processed data
         df_list = []
@@ -243,41 +243,42 @@ class CategorizationEngine:
                 self.transactions_to_categorize.loc[
                     transaction_index, "pattern"
                 ] = None  # clear pattern if user overrides category
-                # set new category if doesn't exist
-                if inputted_category not in self.all_categories:
-                    self.all_categories.append(inputted_category)
-                self.print_all_patterns()
-                inputted_pattern = self.get_user_input_for_pattern(
-                    self.transactions_to_categorize.loc[transaction_index],
-                    inputted_category,
-                )
-                if inputted_pattern != "":  # skip to start if user pressed Enter.
-                    if (
-                        inputted_pattern,
+                # tag transaction as seen
+                self.transactions_to_categorize.loc[
+                    transaction_index, "seen"
+                ] = True
+                if inputted_category != None:  # i.e. user did not clear category
+                    # set new category if doesn't exist
+                    if inputted_category not in self.all_categories:
+                        self.all_categories.append(inputted_category)
+                    self.print_all_patterns()
+                    inputted_pattern = self.get_user_input_for_pattern(
+                        self.transactions_to_categorize.loc[transaction_index],
                         inputted_category,
-                    ) not in self.pattern_category_map_list:
-                        # if new pattern -> cat mapping, add it
-                        if inputted_pattern not in self.all_patterns:
-                            self.all_patterns.append(inputted_pattern)
-                        self.pattern_category_map_list.append(
-                            (inputted_pattern, inputted_category)
-                        )
-                        self.pattern_category_map_dict[
-                            inputted_pattern
-                        ] = inputted_category
-                        # tag the transaction with the pattern
-                        self.transactions_to_categorize.loc[
-                            transaction_index, "pattern"
-                        ] = inputted_pattern
-                        # tag transaction as seen
-                        self.transactions_to_categorize.loc[
-                            transaction_index, "seen"
-                        ] = True
-                        # apply all pattern including new on unseen data
-                        self.categorize_data_using_pattern_category_map(
-                            self.transactions_to_categorize,
-                            self.transactions_to_categorize["seen"] == False,
-                        )
+                    )
+                    if inputted_pattern != "":  # skip to start if user pressed Enter.
+                        if (
+                            inputted_pattern,
+                            inputted_category,
+                        ) not in self.pattern_category_map_list:
+                            # if new pattern -> cat mapping, add it
+                            if inputted_pattern not in self.all_patterns:
+                                self.all_patterns.append(inputted_pattern)
+                            self.pattern_category_map_list.append(
+                                (inputted_pattern, inputted_category)
+                            )
+                            self.pattern_category_map_dict[
+                                inputted_pattern
+                            ] = inputted_category
+                            # tag the transaction with the pattern
+                            self.transactions_to_categorize.loc[
+                                transaction_index, "pattern"
+                            ] = inputted_pattern
+                            # apply all pattern including new on unseen data
+                            self.categorize_data_using_pattern_category_map(
+                                self.transactions_to_categorize,
+                                self.transactions_to_categorize["seen"] == False,
+                            )
 
     def get_user_input_for_transaction_index(self, last_transaction_index=-1) -> int:
         while True:
@@ -364,11 +365,17 @@ class CategorizationEngine:
         print()
         print(transaction["note"])
         if pd.notna(transaction["category"]):
-            print(
-                f"\n- This transaction is already categorized as "
-                f'**{transaction["category"]}** with pattern: '
-                f'**{transaction["pattern"]}**'
-            )
+            if pd.notna(transaction["pattern"]):
+                print(
+                    f"\n- This transaction is already categorized as "
+                    f'**{transaction["category"]}** with pattern: '
+                    f'**{transaction["pattern"]}**'
+                )
+            else:
+                print(
+                    f"\n- This transaction is already categorized as "
+                    f'**{transaction["category"]}** '
+                )
 
     def print_all_categories(self) -> None:
         print("\n      ***** All Categories ******         ")
@@ -385,8 +392,12 @@ class CategorizationEngine:
             try:
                 inputted_category = input(
                     "\nCategorize this transaction by typing in category "
-                    "or selecting index of pre-existing category (enter to skip):\n"
+                    "or selecting index of pre-existing category (enter to skip, "
+                    "enter '-' to clear the category):\n"
                 )
+                if inputted_category == "-":
+                    inputted_category = None
+                    break
                 if inputted_category.isdigit():  # if integer
                     inputted_category = self.all_categories[int(inputted_category)]
                 inputted_category = inputted_category.strip("/").lower()
