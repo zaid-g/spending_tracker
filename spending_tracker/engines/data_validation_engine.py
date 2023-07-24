@@ -195,11 +195,15 @@ class DataValidationEngine:
                 )
 
     @staticmethod
-    def verify_category_is_string_type(category) -> None:
+    def verify_category_format(category) -> None:
         if pd.isna(category):
             return
         if type(category) != str:
             raise ValueError("Category must be string")
+        if len(category) > 50:
+            raise ValueError(
+                f"Category max length is 50 characters, got {len(category)}"
+            )
 
     @staticmethod
     def verify_pattern_matches_text(pattern: str, text: str, hide_text=False) -> None:

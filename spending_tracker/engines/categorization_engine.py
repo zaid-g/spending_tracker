@@ -1,4 +1,5 @@
 import glob
+import cmd
 import os
 import re
 from copy import deepcopy
@@ -25,6 +26,8 @@ class CategorizationEngine:
         self.historical_categorized_transactions_file_path = (
             self.root_data_folder_path + "categorized_transactions.csv"
         )
+        # print options
+        self.terminal_size = os.get_terminal_size()
 
     def load_historical_categorized_transactions(self) -> pd.DataFrame:
         """Load user-categorized transactions from previous runs"""
@@ -52,7 +55,7 @@ class CategorizationEngine:
         )
         # make sure all categories are valid strings in historical file
         historical_categorized_transactions["category"].apply(
-            lambda category: self.data_validation_engine.verify_category_is_string_type(
+            lambda category: self.data_validation_engine.verify_category_format(
                 category
             )
         )
@@ -216,7 +219,7 @@ class CategorizationEngine:
         """Terminal user interface prompting user to categorize new transactions"""
         # time to ask user to confirm or override
         # sort categories and patterns for visual display
-        transaction_index = -1  # default value
+        transaction_index = -1
         while True:
             # sort categories and patterns alphabetically
             self.all_categories.sort()
@@ -288,6 +291,9 @@ class CategorizationEngine:
                 )
                 if transaction_index == "":
                     transaction_index = last_transaction_index + 1
+                    if transaction_index >= len(self.transactions_to_categorize):
+                        print("\n\n *** Reached end of list *** \n\n")
+                        return last_transaction_index
                 elif transaction_index == "s":
                     transaction_index = -1
                 transaction_index = int(transaction_index)
@@ -376,9 +382,12 @@ class CategorizationEngine:
                 )
 
     def print_all_categories(self) -> None:
-        print("\n      ***** All Categories ******         ")
+        all_categories_enum = []
         for i in range(len(self.all_categories)):
-            print(f"{i}: {self.all_categories[i]}")
+            all_categories_enum.append(f"{i}: {self.all_categories[i]}")
+        cli = cmd.Cmd()
+        print("\n      ***** All Categories ******         \n")
+        cli.columnize(all_categories_enum, displaywidth=self.terminal_size.columns)
 
     def print_all_patterns(self) -> None:
         print("\n      ***** All Patterns ******         \n")
@@ -399,6 +408,7 @@ class CategorizationEngine:
                 if inputted_category.isdigit():  # if integer
                     inputted_category = self.all_categories[int(inputted_category)]
                 inputted_category = inputted_category.strip("/").lower()
+                self.data_validation_engine.verify_category_format(inputted_category)
                 break
             except KeyboardInterrupt:
                 print("Exiting without saving")

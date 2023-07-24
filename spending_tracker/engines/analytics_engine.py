@@ -25,8 +25,11 @@ class AnalyticsEngine:
             self.categorized_transactions
         )
         spend_amount_by_category = (
-            self.categorized_transactions.groupby(by=["category"])["amount"]
+            self.categorized_transactions.groupby(by=["category"], dropna=False)[
+                "amount"
+            ]
             .sum()
             .sort_values(ascending=False)
         )
+        print(spend_amount_by_category)
         return {"spend_amount_by_category": spend_amount_by_category}
