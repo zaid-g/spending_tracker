@@ -252,7 +252,6 @@ class CategorizationEngine:
                     # set new category if doesn't exist
                     if inputted_category not in self.all_categories:
                         self.all_categories.append(inputted_category)
-                    self.print_all_patterns()
                     inputted_pattern = self.get_user_input_for_pattern(
                         self.transactions_to_categorize.loc[transaction_index],
                         inputted_category,
@@ -353,7 +352,7 @@ class CategorizationEngine:
 
     @staticmethod
     def print_transaction_details(transaction):
-        print("\n      ***** Transaction Details ******         ")
+        print("\n      ***** Transaction Details ******         \n")
         print(
             transaction[
                 [
@@ -388,11 +387,6 @@ class CategorizationEngine:
         cli = cmd.Cmd()
         print("\n      ***** All Categories ******         \n")
         cli.columnize(all_categories_enum, displaywidth=self.terminal_size.columns)
-
-    def print_all_patterns(self) -> None:
-        print("\n      ***** All Patterns ******         \n")
-        for i in range(len(self.all_patterns)):
-            print(f"{self.all_patterns[i]}")
 
     def get_user_input_for_category(self) -> str:
         while True:
