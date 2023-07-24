@@ -233,9 +233,7 @@ class RawDataProcessingEngine:
         )
         return raw_data
 
-    def chase_amazon_visa_2022_1(
-        self, *kwargs
-    ) -> pd.DataFrame:
+    def chase_amazon_visa_2022_1(self, *kwargs) -> pd.DataFrame:
         return self.chase_freedom_unlimited_2022_1(*kwargs)
 
     def chase_freedom_unlimited_2022_1(
@@ -296,10 +294,16 @@ class RawDataProcessingEngine:
     def amazon_2023_1(
         self, raw_data, raw_data_file_path, raw_data_file_name
     ) -> pd.DataFrame:
-        if raw_data.iloc[-1][0] == 'order id': # fix error in this format
+        if raw_data.iloc[-1][0] == "order id":  # fix error in this format
             raw_data = raw_data.drop(raw_data.index[-1])
-        raw_data["amount"] = raw_data["total"].astype(float) + raw_data["gift"].astype(float) - raw_data["refund"].astype(float)
-        import ipdb; ipdb.set_trace()
+        raw_data["amount"] = (
+            raw_data["total"].astype(float)
+            + raw_data["gift"].astype(float)
+            - raw_data["refund"].astype(float)
+        )
+        import ipdb
+
+        ipdb.set_trace()
         raw_data = raw_data.loc[:, ("date", "amount", "items", "account")]
         raw_data.columns = ["datetime", "amount", "note", "account"]
         raw_data["third_party_category"] = None

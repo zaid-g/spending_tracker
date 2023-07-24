@@ -244,9 +244,7 @@ class CategorizationEngine:
                     transaction_index, "pattern"
                 ] = None  # clear pattern if user overrides category
                 # tag transaction as seen
-                self.transactions_to_categorize.loc[
-                    transaction_index, "seen"
-                ] = True
+                self.transactions_to_categorize.loc[transaction_index, "seen"] = True
                 if inputted_category != None:  # i.e. user did not clear category
                     # set new category if doesn't exist
                     if inputted_category not in self.all_categories:
