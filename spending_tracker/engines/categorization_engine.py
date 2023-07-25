@@ -1,4 +1,5 @@
 import glob
+import pprint
 import cmd
 import os
 import re
@@ -347,10 +348,13 @@ class CategorizationEngine:
         return str_
 
     @staticmethod
-    def print_transaction_details(transaction):
+    def print_dict_user_friendly(dict_):
+        for key, value in dict_.items():
+            print(f"{key}: {value}")
+
+    def print_transaction_details(self, transaction):
         print("\n      ***** Transaction Details ******         \n")
-        print(
-            transaction[
+        self.print_dict_user_friendly(transaction[
                 [
                     "datetime",
                     "amount",
@@ -359,20 +363,19 @@ class CategorizationEngine:
                     "pattern",
                     "category",
                 ]
-            ]
-        )
+            ].to_dict())
         print()
         print(transaction["note"])
         if pd.notna(transaction["category"]):
             if pd.notna(transaction["pattern"]):
                 print(
-                    f"\n- This transaction is already categorized as "
+                    f"\nThis transaction is already categorized as "
                     f'**{transaction["category"]}** with pattern: '
                     f'**{transaction["pattern"]}**'
                 )
             else:
                 print(
-                    f"\n- This transaction is already categorized as "
+                    f"\nThis transaction is already categorized as "
                     f'**{transaction["category"]}** '
                 )
 
