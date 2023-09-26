@@ -31,7 +31,7 @@ To support more accounts, please submit a PR with these changes:
 
 # How to run
 
-Python 3.11 required.
+Python >=3.11 required.
 
 1. Clone repo.
 2. Create and activate virtual environment `python3 -m venv .spending_tracker`, `. ./.spending_tracker/bin/activate`.
